@@ -14,8 +14,6 @@ from subprocess import *
 from scipy.stats import fisher_exact
 usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m multiplier] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.tbl"
 
-#fishertest="perl -wT fisher_exact_test.pl"
-
 def isfixedwidth(regexpstring):
     try:
         tmp=re.compile("(?<="+regexpstring + ")")
@@ -228,9 +226,6 @@ while line:
                print(str(seqs) + "," + name + ",1," + str(mymatch.start()+1) + "," + str(yval))
 
     sys.stdout=origstdout
-    #mycmd=fishertest+" "+str(muts)+" "+str(mutsites-muts)+" "+str(controls)+" "+str(controlsites-controls)
-    #mypipe=Popen(mycmd,shell=True,stdout=PIPE)
-    #pval=mypipe.stdout.read()
     odds_ratio, pval = fisher_exact([[muts, mutsites-muts],[controls,controlsites-controls]], alternative = 'greater')
 
     try:
