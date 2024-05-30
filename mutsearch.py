@@ -105,17 +105,28 @@ if(sys.stdout):
    print("#arg=", arg)
 
 arg=arg.upper()
-arg=re.sub('N',".",arg) # standard IUPAC codes translated to regexps
-arg=re.sub('R',"[AG]",arg)
-arg=re.sub('Y',"[CT]",arg)
-arg=re.sub('B',"[^A]",arg)
-arg=re.sub('D',"[^C]",arg)
-arg=re.sub('H',"[^G]",arg)
-arg=re.sub('V',"[^T]",arg)
-arg=re.sub('M',"[AC]",arg)
-arg=re.sub('K',"[GT]",arg)
-arg=re.sub('S',"[CG]",arg)
-arg=re.sub('W',"[AT]",arg)
+arg=re.sub('R',"[AGR]",arg)
+arg=re.sub('Y',"[CTY]",arg)
+arg=re.sub('M',"[ACM]",arg)
+arg=re.sub('K',"[GTK]",arg)
+arg=re.sub('S',"[CGS]",arg)
+arg=re.sub('W',"[ATW]",arg)
+arg=re.sub('B',"[CGTYBSK]",arg)
+arg=re.sub('D',"[AGTRDWK]",arg)
+arg=re.sub('H',"[ACTYHWM]",arg)
+arg=re.sub('V',"[ACGRVSM]",arg)
+arg=re.sub('N',"[ACGTRYBDHVNWSKM]",arg)
+#arg=re.sub('N',".",arg) # standard IUPAC codes translated to regexps
+#arg=re.sub('R',"[AG]",arg)
+#arg=re.sub('Y',"[CT]",arg)
+#arg=re.sub('B',"[^A]",arg)
+#arg=re.sub('D',"[^C]",arg)
+#arg=re.sub('H',"[^G]",arg)
+#arg=re.sub('V',"[^T]",arg)
+#arg=re.sub('M',"[AC]",arg)
+#arg=re.sub('K',"[GT]",arg)
+#arg=re.sub('S',"[CG]",arg)
+#arg=re.sub('W',"[AT]",arg)
 if(sys.stdout):
    print("#regexps=",arg)
    print("seq_num,seq_name,control,potential_mut_site,mut_match")
@@ -169,17 +180,15 @@ else:       # both or ancestor
 #print('secondcontrolre', secondcontrolre)
 
 seqs=0
-seqlist=[]
 
 line=sys.stdin.readline()
-refname=line[1:]
+refname=line[1:].strip()
 refseq=""
 line=sys.stdin.readline()
 while line and line[0]!=">":
     refseq=refseq+line
     line=sys.stdin.readline()
 refseq=refseq.replace("\n","")
-
 
 seqs=0
 while line:
@@ -199,6 +208,8 @@ while line:
         potentialmuts=potentialmutre.finditer(refseq,start,finish)
     else:
         potentialmuts=potentialmutre.finditer(refseq,start)
+
+    #print(sequence)
 
     for mymatch in potentialmuts:
         if secondmutre.match(sequence,mymatch.start()): #optional match arg
