@@ -41,9 +41,8 @@ def widthonly(regexpstring):
     if len(dotstring)==500:
         raise error("regexp too long (greater than 500)")
     return dotstring
-        
 
-    
+
 
 # main starts here #
 
@@ -105,6 +104,7 @@ if(sys.stdout):
    print("#arg=", arg)
 
 arg=arg.upper()
+# standard IUPAC codes translated to regexps
 arg=re.sub('R',"[AGR]",arg)
 arg=re.sub('Y',"[CTY]",arg)
 arg=re.sub('M',"[ACM]",arg)
@@ -116,23 +116,11 @@ arg=re.sub('D',"[AGTRDWK]",arg)
 arg=re.sub('H',"[ACTYHWM]",arg)
 arg=re.sub('V',"[ACGRVSM]",arg)
 arg=re.sub('N',"[ACGTRYBDHVNWSKM]",arg)
-#arg=re.sub('N',".",arg) # standard IUPAC codes translated to regexps
-#arg=re.sub('R',"[AG]",arg)
-#arg=re.sub('Y',"[CT]",arg)
-#arg=re.sub('B',"[^A]",arg)
-#arg=re.sub('D',"[^C]",arg)
-#arg=re.sub('H',"[^G]",arg)
-#arg=re.sub('V',"[^T]",arg)
-#arg=re.sub('M',"[AC]",arg)
-#arg=re.sub('K',"[GT]",arg)
-#arg=re.sub('S',"[CG]",arg)
-#arg=re.sub('W',"[AT]",arg)
 if(sys.stdout):
    print("#regexps=",arg)
    print("seq_num,seq_name,control,potential_mut_site,mut_match")
 
 (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(arg, ",")
-
 
 # use ?= "lookahead" and ?<= lookbehind so we can find overlapping patterns
 # Note that the regexps will be applied to different
@@ -148,6 +136,11 @@ if (not isfixedwidth(mutfrom)) or (not isfixedwidth(mutto)):
     die_widthnotfixed("mutation")
 if (not isfixedwidth(controlfrom)) or (not isfixedwidth(controlto)):
     die_widthnotfixed("control mutation")
+if len(widthonly(mutupstream)) != len(widthonly(controlupstream)):
+    raise ValueError("Upstream primary and control patterns must be the same length")
+if len(widthonly(mutdownstream)) != len(widthonly(controldownstream)):
+    raise ValueError("Downstream primary and control patterns must be the same length")
+
 
 if enforce=="D": # descendant
     potentialmutre=re.compile(mutfrom,re.I)
