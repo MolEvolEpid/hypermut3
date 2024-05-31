@@ -159,6 +159,11 @@ if(sys.stdout):
 
 arg=arg.upper()
 arg_context=arg
+iupac = list('ACGTRYBDHVNWSKM')
+
+bad_chars = [x for x in set(arg) if x not in iupac+[',','.','|']]
+if len(bad_chars):
+    raise ValueError(f"All patterns and mutations must include only IUPAC characters, '.', and '|'. You included non-IUPAC characters: {bad_chars}")
 
 arg=arg.upper()
 # standard IUPAC codes translated to regexps
@@ -179,6 +184,9 @@ if(sys.stdout):
    print("seq_num,seq_name,control,potential_mut_site,mut_match")
 
 (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(arg, ",")
+
+if mutfrom == '' or mutto == '' or controlfrom == '' or controlto == '':
+    raise ValueError("Mutations must be IUPAC characters.") 
 
 # use ?= "lookahead" and ?<= lookbehind so we can find overlapping patterns
 # Note that the regexps will be applied to different
@@ -241,10 +249,11 @@ line=sys.stdin.readline()
 while line and line[0]!=">":
     refseq=refseq+line
     line=sys.stdin.readline()
-refseq=refseq.replace("\n","")
+refseq=refseq.replace("\n","").upper()
 
-if any(x not in ['A', 'C', 'G', 'T', '-'] for x in set(refseq)):
-    raise ValueError('The reference sequence must contain only the following characters: ACGT-. Yours contains: %s' % ''.join(set(refseq)))
+bad_chars = [x for x in set(refseq) if x not in ['A', 'C', 'G', 'T', '-']]
+if len(bad_chars):
+    raise ValueError(f'The reference sequence must contain only the following characters: ACGT-. Yours contains: {bad_chars}')
 
 seqs=0
 while line:
@@ -256,7 +265,12 @@ while line:
     while line and line[0]!=">":
         sequence=sequence+line
         line=sys.stdin.readline()
-    sequence=sequence.replace("\n","")
+    sequence=sequence.replace("\n","").upper()
+
+    bad_chars = [x for x in set(sequence) if x not in iupac+['-']]
+    if len(bad_chars):
+        raise ValueError(f'The reference sequence must contain only IUPAC characters or - (for gap). Yours contains: {bad_chars}')
+
 
     seqs+=1
 
@@ -264,8 +278,6 @@ while line:
         potentialmuts=potentialmutre.finditer(refseq,start,finish)
     else:
         potentialmuts=potentialmutre.finditer(refseq,start)
-
-    #print(sequence)
 
     for mymatch in potentialmuts:
         if secondmutre.match(sequence,mymatch.start()): #optional match arg
