@@ -190,6 +190,9 @@ while line and line[0]!=">":
     line=sys.stdin.readline()
 refseq=refseq.replace("\n","")
 
+if any(x not in ['A', 'C', 'G', 'T', '-'] for x in set(refseq)):
+    raise ValueError('The reference sequence must contain only the following characters: ACGT-. Yours contains: %s' % ''.join(set(refseq)))
+
 seqs=0
 while line:
     (mutsites,muts)=(0,0)  # mutsites= potentialmuts also passing secondre
