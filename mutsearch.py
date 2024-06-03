@@ -14,7 +14,7 @@ from subprocess import *
 from scipy.stats import fisher_exact
 import itertools
 import warnings
-usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m multiplier] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.tbl"
+usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m (and|or|ignore)] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.tbl"
 
 def isfixedwidth(regexpstring):
     try:
@@ -134,7 +134,7 @@ def check_context(context):
 # main starts here #
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], "hs:f:e:m:o:u:", ["help", "start=","finish=","enforce=","multiplier=","outfile=", "summaryfile="])
+    opts, args = getopt.getopt(sys.argv[1:], "hs:f:e:m:o:u:", ["help", "start=","finish=","enforce=","multistate=","outfile=", "summaryfile="])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(str(err))
@@ -146,7 +146,7 @@ finish=None
 outfile=None
 sumfile=None
 enforce="D"  # first letter of Ancestor, Descendant, or Both
-multiplier = 1.0
+multistate = "and"
 
 for o, a in opts:
     if o in ("-o", "--outfile"):
@@ -172,8 +172,12 @@ for o, a in opts:
             print("Can't understand negative finish")
     if o in ("-e", "--enforce"):
         enforce = a[0].upper()
-    if o in ("-m", "--multiplier"):
-        multiplier=a
+        if enforce not in ['A', 'D', 'B']:
+            raise ValueError("enforce must be A, D, or B")
+    if o in ("-m", "--multistate"):
+        multistate=a.lower()
+        if multistate not in ['and', 'or', 'ignore']:
+            raise ValueError("multistate must be and, or, or ignore")
 
 
 if not (len(args)==1):
@@ -201,22 +205,22 @@ if len(bad_chars):
 check_context(arg_context)
 
 # allow for gaps
-arg=re.sub('A',"[A][-]*",arg)
-arg=re.sub('C',"[C][-]*",arg)
-arg=re.sub('G',"[G][-]*",arg)
-arg=re.sub('T',"[T][-]*",arg)
+arg=re.sub('A',"[-]*[A][-]*",arg)
+arg=re.sub('C',"[-]*[C][-]*",arg)
+arg=re.sub('G',"[-]*[G][-]*",arg)
+arg=re.sub('T',"[-]*[T][-]*",arg)
 # standard IUPAC codes translated to regexps
-arg=re.sub('R',"[AGR][-]*",arg)
-arg=re.sub('Y',"[CTY][-]*",arg)
-arg=re.sub('M',"[ACM][-]*",arg)
-arg=re.sub('K',"[GTK][-]*",arg)
-arg=re.sub('S',"[CGS][-]*",arg)
-arg=re.sub('W',"[ATW][-]*",arg)
-arg=re.sub('B',"[CGTYBSK][-]*",arg)
-arg=re.sub('D',"[AGTRDWK][-]*",arg)
-arg=re.sub('H',"[ACTYHWM][-]*",arg)
-arg=re.sub('V',"[ACGRVSM][-]*",arg)
-arg=re.sub('N',"[ACGTRYBDHVNWSKM][-]*",arg)
+arg=re.sub('R',"[-]*[AGR][-]*",arg)
+arg=re.sub('Y',"[-]*[CTY][-]*",arg)
+arg=re.sub('M',"[-]*[ACM][-]*",arg)
+arg=re.sub('K',"[-]*[GTK][-]*",arg)
+arg=re.sub('S',"[-]*[CGS][-]*",arg)
+arg=re.sub('W',"[-]*[ATW][-]*",arg)
+arg=re.sub('B',"[-]*[CGTYBSK][-]*",arg)
+arg=re.sub('D',"[-]*[AGTRDWK][-]*",arg)
+arg=re.sub('H',"[-]*[ACTYHWM][-]*",arg)
+arg=re.sub('V',"[-]*[ACGRVSM][-]*",arg)
+arg=re.sub('N',"[-]*[ACGTRYBDHVNWSKM][-]*",arg)
 arg=re.sub('\\.', "", arg)
 if(sys.stdout):
    print("#regexps=",arg)
@@ -243,9 +247,9 @@ if mutfrom not in iupac or mutto not in iupac or controlfrom not in iupac or con
 
 if enforce=="D": # descendant
     potentialmutre=re.compile(mutfrom,re.I)
-    secondmutre=re.compile("(?<="+ mutupstream +")[-]*("+widthonly(mutto) +")[-]*(?="+ mutdownstream+ ")",re.I)
+    secondmutre=re.compile("(?<="+ mutupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ mutdownstream+ ")",re.I)
     potentialcontrolre=re.compile(controlfrom,re.I)
-    secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+widthonly(controlto) +")[-]*(?="+ controldownstream+ ")",re.I)
+    secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ controldownstream+ ")",re.I)
     actualmutre=re.compile(mutto,re.I)
     actualcontrolre=re.compile(controlto,re.I)
 else:       # both or ancestor
@@ -253,14 +257,14 @@ else:       # both or ancestor
     potentialcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlfrom +")[-]*(?="+ controldownstream+ ")",re.I)
     if enforce=="A": # ancestor
         actualmutre=re.compile(mutto,re.I)
-        secondmutre=re.compile(widthonly(mutto),re.I)  # nullstring might work too?
+        secondmutre=re.compile("[ACGTRYBDHVNWSKM]",re.I)  # nullstring might work too?
         actualcontrolre=re.compile(controlto,re.I)
-        secondcontrolre=re.compile(widthonly(controlto),re.I)
+        secondcontrolre=re.compile("[ACGTRYBDHVNWSKM]",re.I)
     elif enforce=="B": # both
         actualmutre=re.compile("(?<="+ mutupstream +")[-]*("+mutto +")[-]*(?="+ mutdownstream+ ")",re.I)
-        secondmutre=re.compile("(?<="+ mutupstream +")[-]*("+widthonly(mutto) +")[-]*(?="+ mutdownstream+ ")",re.I)
+        secondmutre=re.compile("(?<="+ mutupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ mutdownstream+ ")",re.I)
         actualcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlto +")[-]*(?="+ controldownstream+ ")",re.I)
-        secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+widthonly(controlto) +")[-]*(?="+ controldownstream+ ")",re.I)
+        secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ controldownstream+ ")",re.I)
     else:
         raise ValueError("unknown enforce value")
 
@@ -285,6 +289,11 @@ refseq=refseq.replace("\n","").upper()
 bad_chars = [x for x in set(refseq) if x not in ['A', 'C', 'G', 'T', '-']]
 if len(bad_chars):
     raise ValueError(f'The reference sequence must contain only the following characters: ACGT-. Yours contains: {bad_chars}')
+
+iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
+              "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"], 
+              "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"], 
+              "N": ["A", "C", "G", "T"]} #, "-": ["-"]}
 
 seqs=0
 while line:
@@ -314,11 +323,24 @@ while line:
             base = sequence[mymatch.start():mymatch.end()]
             if base == '-':
                 continue
-            yval=0  # 0 is potential match, 1 will be actual match
-            mutsites+=1
-            if actualmutre.match(sequence,mymatch.start()):
-                yval = 1
-                muts += 1
+
+            chars_seq = iupac_dict[base]
+            chars_mut = iupac_dict[mutto]
+            # 0 is potential match, 1 is complete match, between is partial match (if and)
+            if multistate == "and":
+                mutsites+=1
+                yval = sum([x in chars_mut for x in chars_seq])/len(chars_seq) # and
+            elif multistate == "or":
+                mutsites+=1
+                yval = int(any([x in chars_mut for x in chars_seq])) # or
+            else: # ignore if multistate
+                if len(chars_seq) > 1:
+                    continue
+                else:
+                    mutsites+=1
+                    yval = int(chars_seq[0] in chars_mut)
+            muts += yval
+            
             if(sys.stdout):
                 print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(yval))
 
@@ -332,11 +354,24 @@ while line:
             base = sequence[mymatch.start():mymatch.end()]
             if base == '-':
                 continue
-            yval=0  # 0 is potential match, 1 will be actual match
-            controlsites+=1
-            if actualcontrolre.match(sequence,mymatch.start()):
-                yval = 1
-                controls+=1
+
+            chars_seq = iupac_dict[base]
+            chars_mut = iupac_dict[mutto]
+            # 0 is potential match, 1 is complete match, between is partial match (if and)
+            if multistate == "and":
+                controlsites+=1
+                yval = sum([x in chars_mut for x in chars_seq])/len(chars_seq) # and
+            elif multistate == "or":
+                controlsites+=1
+                yval = int(any([x in chars_mut for x in chars_seq])) # or
+            else: # ignore if multistate
+                if len(chars_seq) > 1:
+                    continue
+                else:
+                    controlsites+=1
+                    yval = int(chars_seq[0] in chars_mut)
+            controls += yval
+ 
             if(sys.stdout):
                print(str(seqs) + "," + name + ",1," + str(mymatch.start()+1) + "," + str(yval))
 
