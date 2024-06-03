@@ -9,8 +9,6 @@
    
 import sys, getopt
 import re
-import string
-from subprocess import *
 from scipy.stats import fisher_exact
 import itertools
 import warnings
