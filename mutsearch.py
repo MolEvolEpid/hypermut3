@@ -14,7 +14,7 @@ from subprocess import *
 from scipy.stats import fisher_exact
 import itertools
 import warnings
-usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m (and|or|ignore)] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.tbl"
+usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m (and|or|ignore)] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.fasta"
 
 def isfixedwidth(regexpstring):
     try:
@@ -130,6 +130,32 @@ def check_context(context):
             raise ValueError(f"Partially overlapping upstream-downstream pattern contexts: {overlap}. This means that positions cannot be categorized uniquely into primary and control groups.")
         if n_patterns != n_patterns_expected:
             warnings.warn(f"{loc} primary and control patterns (n= {str(n_patterns)}) do not create the full complement of possible patterns (n={str(n_patterns_expected)})", stacklevel=2)
+
+
+def get_potential_matches(refseq, start, finish, regex):
+    if(finish):
+        potentialmatches=regex.finditer(refseq,start,finish)
+    else:
+        potentialmatches=regex.finditer(refseq,start)
+    return(potentialmatches)
+
+def find_match_weight(base, mutto, iupac_dict, multistate):
+    chars_seq = iupac_dict[base]
+    chars_mut = iupac_dict[mutto]
+    # 0 is potential match, 1 is complete match, between is partial match (if and)
+    site=1
+    if multistate == "and":
+        match_val = sum([x in chars_mut for x in chars_seq])/len(chars_seq) # and
+    elif multistate == "or":
+        match_val = int(any([x in chars_mut for x in chars_seq])) # or
+    else: # ignore if multistate
+        if len(chars_seq) > 1:
+            site=0
+            match_val=0
+        else:
+            match_val = int(chars_seq[0] in chars_mut)
+
+    return((site,match_val))
  
 # main starts here #
 
@@ -141,12 +167,13 @@ except getopt.GetoptError as err:
     print(usage)
     sys.exit(2)
 
+# defaults
 start=0
 finish=None
 outfile=None
 sumfile=None
 enforce="D"  # first letter of Ancestor, Descendant, or Both
-multistate = "and"
+multistate = "and" # and, or, or ignore
 
 for o, a in opts:
     if o in ("-o", "--outfile"):
@@ -196,9 +223,13 @@ if(sys.stdout):
 
 arg=arg.upper()
 arg_context=arg
-iupac = list('ACGTRYBDHVNWSKM')
+iupac_codes = list('ACGTRYBDHVNWSKM')
+iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
+              "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"],
+              "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"],
+              "N": ["A", "C", "G", "T"]}
 
-bad_chars = [x for x in set(arg) if x not in iupac+[',','.','|']]
+bad_chars = [x for x in set(arg) if x not in iupac_codes+[',','.','|']]
 if len(bad_chars):
     raise ValueError(f"All patterns and mutations must include only IUPAC characters, '.', and '|'. You included non-IUPAC characters: {bad_chars}")
 
@@ -228,13 +259,12 @@ if(sys.stdout):
 
 (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(arg, ",")
 
+# require mutation to be only one base
 mutfrom = re.sub('\\[|\\]|-|\\*', '', mutfrom)
 mutto = re.sub('\\[|\\]|-|\\*', '', mutto)
 controlfrom = re.sub('\\[|\\]|-|\\*', '', controlfrom)
 controlto = re.sub('\\[|\\]|-|\\*', '', controlto)
-
-# require mutation to be only one base
-if mutfrom not in iupac or mutto not in iupac or controlfrom not in iupac or controlto not in iupac:
+if mutfrom not in iupac_codes or mutto not in iupac_codes or controlfrom not in iupac_codes or controlto not in iupac_codes:
     raise ValueError("Mutations must be single IUPAC characters.") 
 
 # use ?= "lookahead" and ?<= lookbehind so we can find overlapping patterns
@@ -243,36 +273,27 @@ if mutfrom not in iupac or mutto not in iupac or controlfrom not in iupac or con
 
 # potential always checked on ancestor
 # second confirms potential in descendant
-# actual means mutation fits pattern
 
 if enforce=="D": # descendant
     potentialmutre=re.compile(mutfrom,re.I)
     secondmutre=re.compile("(?<="+ mutupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ mutdownstream+ ")",re.I)
     potentialcontrolre=re.compile(controlfrom,re.I)
     secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ controldownstream+ ")",re.I)
-    actualmutre=re.compile(mutto,re.I)
-    actualcontrolre=re.compile(controlto,re.I)
-else:       # both or ancestor
+else: # both or ancestor
     potentialmutre=re.compile("(?<="+ mutupstream +")[-]*("+mutfrom +")[-]*(?="+ mutdownstream+ ")",re.I)
     potentialcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlfrom +")[-]*(?="+ controldownstream+ ")",re.I)
     if enforce=="A": # ancestor
-        actualmutre=re.compile(mutto,re.I)
         secondmutre=re.compile("[ACGTRYBDHVNWSKM]",re.I)  # nullstring might work too?
-        actualcontrolre=re.compile(controlto,re.I)
         secondcontrolre=re.compile("[ACGTRYBDHVNWSKM]",re.I)
     elif enforce=="B": # both
-        actualmutre=re.compile("(?<="+ mutupstream +")[-]*("+mutto +")[-]*(?="+ mutdownstream+ ")",re.I)
         secondmutre=re.compile("(?<="+ mutupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ mutdownstream+ ")",re.I)
-        actualcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlto +")[-]*(?="+ controldownstream+ ")",re.I)
         secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*([ACGTRYBDHVNWSKM])[-]*(?="+ controldownstream+ ")",re.I)
     else:
         raise ValueError("unknown enforce value")
 
 #print('potentialmutre', potentialmutre)
 #print('potentialcontrolre', potentialcontrolre)
-#print('actualmutre', actualmutre)
 #print('secondmutre', secondmutre)
-#print('actualcontrolre', actualcontrolre)
 #print('secondcontrolre', secondcontrolre)
 
 seqs=0
@@ -290,11 +311,6 @@ bad_chars = [x for x in set(refseq) if x not in ['A', 'C', 'G', 'T', '-']]
 if len(bad_chars):
     raise ValueError(f'The reference sequence must contain only the following characters: ACGT-. Yours contains: {bad_chars}')
 
-iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
-              "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"], 
-              "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"], 
-              "N": ["A", "C", "G", "T"]} #, "-": ["-"]}
-
 seqs=0
 while line:
     (mutsites,muts)=(0,0)  # mutsites= potentialmuts also passing secondre
@@ -307,70 +323,38 @@ while line:
         line=sys.stdin.readline()
     sequence=sequence.replace("\n","").upper()
 
-    bad_chars = [x for x in set(sequence) if x not in iupac+['-']]
+    bad_chars = [x for x in set(sequence) if x not in iupac_codes+['-']]
     if len(bad_chars):
-        raise ValueError(f'The reference sequence must contain only IUPAC characters or - (for gap). Yours contains: {bad_chars}')
+        raise ValueError(f'Query sequences must contain only IUPAC characters or - (for gap). Yours contains: {bad_chars}')
 
     seqs+=1
 
-    if(finish):
-        potentialmuts=potentialmutre.finditer(refseq,start,finish)
-    else:
-        potentialmuts=potentialmutre.finditer(refseq,start)
+    potentialmuts=get_potential_matches(refseq,start,finish,potentialmutre)
 
     for mymatch in potentialmuts:
         if secondmutre.match(sequence,mymatch.start()): #optional match arg
             base = sequence[mymatch.start():mymatch.end()]
             if base == '-':
                 continue
-
-            chars_seq = iupac_dict[base]
-            chars_mut = iupac_dict[mutto]
-            # 0 is potential match, 1 is complete match, between is partial match (if and)
-            if multistate == "and":
-                mutsites+=1
-                yval = sum([x in chars_mut for x in chars_seq])/len(chars_seq) # and
-            elif multistate == "or":
-                mutsites+=1
-                yval = int(any([x in chars_mut for x in chars_seq])) # or
-            else: # ignore if multistate
-                if len(chars_seq) > 1:
-                    continue
-                else:
-                    mutsites+=1
-                    yval = int(chars_seq[0] in chars_mut)
-            muts += yval
+            site, match_val = find_match_weight(base, mutto, iupac_dict, multistate)
+            mutsites+=site
+            yval=match_val
+            muts+=yval
             
             if(sys.stdout):
                 print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(yval))
 
-    if(finish):
-        potentialcontrols=potentialcontrolre.finditer(refseq,start,finish)
-    else:
-        potentialcontrols=potentialcontrolre.finditer(refseq,start)
+    potentialcontrols=get_potential_matches(refseq,start,finish,potentialcontrolre)
 
     for mymatch in potentialcontrols:
         if secondcontrolre.match(sequence,mymatch.start()): #optional match arg
             base = sequence[mymatch.start():mymatch.end()]
             if base == '-':
                 continue
-
-            chars_seq = iupac_dict[base]
-            chars_mut = iupac_dict[mutto]
-            # 0 is potential match, 1 is complete match, between is partial match (if and)
-            if multistate == "and":
-                controlsites+=1
-                yval = sum([x in chars_mut for x in chars_seq])/len(chars_seq) # and
-            elif multistate == "or":
-                controlsites+=1
-                yval = int(any([x in chars_mut for x in chars_seq])) # or
-            else: # ignore if multistate
-                if len(chars_seq) > 1:
-                    continue
-                else:
-                    controlsites+=1
-                    yval = int(chars_seq[0] in chars_mut)
-            controls += yval
+            site, match_val = find_match_weight(base, mutto, iupac_dict, multistate)
+            controlsites+=site
+            yval=match_val
+            controls+=yval
  
             if(sys.stdout):
                print(str(seqs) + "," + name + ",1," + str(mymatch.start()+1) + "," + str(yval))
