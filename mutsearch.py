@@ -36,12 +36,12 @@ def die_widthnotfixed(culprit):
 
 def widthonly(regexpstring):
     if not isfixedwidth(regexpstring):
-        raise error("not fixed width")
+        raise ValueError("not fixed width")
     dotstring=""
     while (not isfixedwidth(regexpstring+"|"+dotstring)) and len(dotstring)<500:
         dotstring = dotstring + "."
     if len(dotstring)==500:
-        raise error("regexp too long (greater than 500)")
+        raise ValueError("regexp too long (greater than 500)")
     return dotstring
 
 def check_overlap(mut_pattern, control_pattern, width, loc):
@@ -61,7 +61,39 @@ def check_overlap(mut_pattern, control_pattern, width, loc):
         if n_patterns != n_patterns_expected:
             warnings.warn(f"{loc} primary and control patterns (n= {str(n_patterns)}) do not create the full complement of possible patterns (n={str(n_patterns_expected)})", stacklevel=2)
 
-def check_context(context, upstream_width, downstream_width):
+def check_width(context):
+    # standard IUPAC codes translated to regexps
+    context=re.sub('R',"[AGR]",context)
+    context=re.sub('Y',"[CTY]",context)
+    context=re.sub('M',"[ACM]",context)
+    context=re.sub('K',"[GTK]",context)
+    context=re.sub('S',"[CGS]",context)
+    context=re.sub('W',"[ATW]",context)
+    context=re.sub('B',"[CGTYBSK]",context)
+    context=re.sub('D',"[AGTRDWK]",context)
+    context=re.sub('H',"[ACTYHWM]",context)
+    context=re.sub('V',"[ACGRVSM]",context)
+    context=re.sub('N',"[ACGTRYBDHVNWSKM]",context)
+    context=re.sub('\\.', "", context)
+
+    (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(context, ",")
+
+    if (not isfixedwidth(mutupstream)) or (not isfixedwidth(controlupstream)):
+        die_widthnotfixed("upstream")
+    if (not isfixedwidth(mutfrom)) or (not isfixedwidth(mutto)):
+        die_widthnotfixed("mutation")
+    if (not isfixedwidth(controlfrom)) or (not isfixedwidth(controlto)):
+        die_widthnotfixed("control mutation")
+    if len(widthonly(mutupstream)) != len(widthonly(controlupstream)):
+        raise ValueError("Upstream primary and control patterns must be the same length")
+    if len(widthonly(mutdownstream)) != len(widthonly(controldownstream)):
+        raise ValueError("Downstream primary and control patterns must be the same length")
+    
+    return(len(widthonly(mutupstream))+len(widthonly(mutdownstream))) 
+
+def check_context(context):
+    width = check_width(context)
+
     context=re.sub('A'," A ",context)
     context=re.sub('C'," C ",context)
     context=re.sub('G'," G ",context)
@@ -78,6 +110,7 @@ def check_context(context, upstream_width, downstream_width):
     context=re.sub('S'," CG ",context)
     context=re.sub('W'," AT ",context) 
     context=re.sub('\\.', "", context)
+    
     (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(context, ",")    
 
     mut_pattern = '|'.join([y + x for x in mutdownstream.split('|') for y in mutupstream.split('|')])
@@ -91,7 +124,7 @@ def check_context(context, upstream_width, downstream_width):
 
     overlap = set(contexts_mut) & set(contexts_control)
     n_patterns = len(set(contexts_mut)) + len(set(contexts_control))
-    n_patterns_expected = 4**(upstream_width+downstream_width)
+    n_patterns_expected = 4**(width)
     if len(overlap) != n_patterns_expected:
         if len(overlap):
             raise ValueError(f"Partially overlapping upstream-downstream pattern contexts: {overlap}. This means that positions cannot be categorized uniquely into primary and control groups.")
@@ -165,19 +198,25 @@ bad_chars = [x for x in set(arg) if x not in iupac+[',','.','|']]
 if len(bad_chars):
     raise ValueError(f"All patterns and mutations must include only IUPAC characters, '.', and '|'. You included non-IUPAC characters: {bad_chars}")
 
-arg=arg.upper()
+check_context(arg_context)
+
+# allow for gaps
+arg=re.sub('A',"[A][-]*",arg)
+arg=re.sub('C',"[C][-]*",arg)
+arg=re.sub('G',"[G][-]*",arg)
+arg=re.sub('T',"[T][-]*",arg)
 # standard IUPAC codes translated to regexps
-arg=re.sub('R',"[AGR]",arg)
-arg=re.sub('Y',"[CTY]",arg)
-arg=re.sub('M',"[ACM]",arg)
-arg=re.sub('K',"[GTK]",arg)
-arg=re.sub('S',"[CGS]",arg)
-arg=re.sub('W',"[ATW]",arg)
-arg=re.sub('B',"[CGTYBSK]",arg)
-arg=re.sub('D',"[AGTRDWK]",arg)
-arg=re.sub('H',"[ACTYHWM]",arg)
-arg=re.sub('V',"[ACGRVSM]",arg)
-arg=re.sub('N',"[ACGTRYBDHVNWSKM]",arg)
+arg=re.sub('R',"[AGR][-]*",arg)
+arg=re.sub('Y',"[CTY][-]*",arg)
+arg=re.sub('M',"[ACM][-]*",arg)
+arg=re.sub('K',"[GTK][-]*",arg)
+arg=re.sub('S',"[CGS][-]*",arg)
+arg=re.sub('W',"[ATW][-]*",arg)
+arg=re.sub('B',"[CGTYBSK][-]*",arg)
+arg=re.sub('D',"[AGTRDWK][-]*",arg)
+arg=re.sub('H',"[ACTYHWM][-]*",arg)
+arg=re.sub('V',"[ACGRVSM][-]*",arg)
+arg=re.sub('N',"[ACGTRYBDHVNWSKM][-]*",arg)
 arg=re.sub('\\.', "", arg)
 if(sys.stdout):
    print("#regexps=",arg)
@@ -185,8 +224,14 @@ if(sys.stdout):
 
 (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(arg, ",")
 
-if mutfrom == '' or mutto == '' or controlfrom == '' or controlto == '':
-    raise ValueError("Mutations must be IUPAC characters.") 
+mutfrom = re.sub('\\[|\\]|-|\\*', '', mutfrom)
+mutto = re.sub('\\[|\\]|-|\\*', '', mutto)
+controlfrom = re.sub('\\[|\\]|-|\\*', '', controlfrom)
+controlto = re.sub('\\[|\\]|-|\\*', '', controlto)
+
+# require mutation to be only one base
+if mutfrom not in iupac or mutto not in iupac or controlfrom not in iupac or controlto not in iupac:
+    raise ValueError("Mutations must be single IUPAC characters.") 
 
 # use ?= "lookahead" and ?<= lookbehind so we can find overlapping patterns
 # Note that the regexps will be applied to different
@@ -196,40 +241,26 @@ if mutfrom == '' or mutto == '' or controlfrom == '' or controlto == '':
 # second confirms potential in descendant
 # actual means mutation fits pattern
 
-if (not isfixedwidth(mutupstream)) or (not isfixedwidth(controlupstream)):
-    die_widthnotfixed("upstream")
-if (not isfixedwidth(mutfrom)) or (not isfixedwidth(mutto)):
-    die_widthnotfixed("mutation")
-if (not isfixedwidth(controlfrom)) or (not isfixedwidth(controlto)):
-    die_widthnotfixed("control mutation")
-if len(widthonly(mutupstream)) != len(widthonly(controlupstream)):
-    raise ValueError("Upstream primary and control patterns must be the same length")
-if len(widthonly(mutdownstream)) != len(widthonly(controldownstream)):
-    raise ValueError("Downstream primary and control patterns must be the same length")
-
-check_context(arg_context, len(widthonly(mutupstream)), len(widthonly(mutdownstream)))
-
-
 if enforce=="D": # descendant
     potentialmutre=re.compile(mutfrom,re.I)
-    secondmutre=re.compile("(?<="+ mutupstream +")("+widthonly(mutto) +")(?="+ mutdownstream+ ")",re.I)
+    secondmutre=re.compile("(?<="+ mutupstream +")[-]*("+widthonly(mutto) +")[-]*(?="+ mutdownstream+ ")",re.I)
     potentialcontrolre=re.compile(controlfrom,re.I)
-    secondcontrolre=re.compile("(?<="+ controlupstream +")("+widthonly(controlto) +")(?="+ controldownstream+ ")",re.I)
+    secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+widthonly(controlto) +")[-]*(?="+ controldownstream+ ")",re.I)
     actualmutre=re.compile(mutto,re.I)
     actualcontrolre=re.compile(controlto,re.I)
 else:       # both or ancestor
-    potentialmutre=re.compile("(?<="+ mutupstream +")("+mutfrom +")(?="+ mutdownstream+ ")",re.I)
-    potentialcontrolre=re.compile("(?<="+ controlupstream +")("+controlfrom +")(?="+ controldownstream+ ")",re.I)
+    potentialmutre=re.compile("(?<="+ mutupstream +")[-]*("+mutfrom +")[-]*(?="+ mutdownstream+ ")",re.I)
+    potentialcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlfrom +")[-]*(?="+ controldownstream+ ")",re.I)
     if enforce=="A": # ancestor
         actualmutre=re.compile(mutto,re.I)
         secondmutre=re.compile(widthonly(mutto),re.I)  # nullstring might work too?
         actualcontrolre=re.compile(controlto,re.I)
         secondcontrolre=re.compile(widthonly(controlto),re.I)
     elif enforce=="B": # both
-        actualmutre=re.compile("(?<="+ mutupstream +")("+mutto +")(?="+ mutdownstream+ ")",re.I)
-        secondmutre=re.compile("(?<="+ mutupstream +")("+widthonly(mutto) +")(?="+ mutdownstream+ ")",re.I)
-        actualcontrolre=re.compile("(?<="+ controlupstream +")("+controlto +")(?="+ controldownstream+ ")",re.I)
-        secondcontrolre=re.compile("(?<="+ controlupstream +")("+widthonly(controlto) +")(?="+ controldownstream+ ")",re.I)
+        actualmutre=re.compile("(?<="+ mutupstream +")[-]*("+mutto +")[-]*(?="+ mutdownstream+ ")",re.I)
+        secondmutre=re.compile("(?<="+ mutupstream +")[-]*("+widthonly(mutto) +")[-]*(?="+ mutdownstream+ ")",re.I)
+        actualcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+controlto +")[-]*(?="+ controldownstream+ ")",re.I)
+        secondcontrolre=re.compile("(?<="+ controlupstream +")[-]*("+widthonly(controlto) +")[-]*(?="+ controldownstream+ ")",re.I)
     else:
         raise ValueError("unknown enforce value")
 
@@ -271,7 +302,6 @@ while line:
     if len(bad_chars):
         raise ValueError(f'The reference sequence must contain only IUPAC characters or - (for gap). Yours contains: {bad_chars}')
 
-
     seqs+=1
 
     if(finish):
@@ -281,6 +311,9 @@ while line:
 
     for mymatch in potentialmuts:
         if secondmutre.match(sequence,mymatch.start()): #optional match arg
+            base = sequence[mymatch.start():mymatch.end()]
+            if base == '-':
+                continue
             yval=0  # 0 is potential match, 1 will be actual match
             mutsites+=1
             if actualmutre.match(sequence,mymatch.start()):
@@ -296,6 +329,9 @@ while line:
 
     for mymatch in potentialcontrols:
         if secondcontrolre.match(sequence,mymatch.start()): #optional match arg
+            base = sequence[mymatch.start():mymatch.end()]
+            if base == '-':
+                continue
             yval=0  # 0 is potential match, 1 will be actual match
             controlsites+=1
             if actualcontrolre.match(sequence,mymatch.start()):
