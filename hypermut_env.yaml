@@ -1,0 +1,11 @@
+name: hypermut
+
+# channels:
+#   - conda-forge
+#   - defaults
+
+dependencies:
+  # To run hypermut
+  - scipy
+  # To test the code
+  - pytest

@@ -22,12 +22,24 @@ Fisher's exact test is then used to detect any increase of mutation for the spec
 
 ## Installation
 
-Hypermut 3.0 is written in Python3 and has the following package requirements: sys, getopt, re, scipy.stats, itertools, warnings, math.
+Hypermut 3.0 is written in Python3 and requires the `scipy` package. 
 
 To clone this repo:
 
 ```
 git clone https://github.com/MolEvolEpid/hypermut
+```
+
+The `hypermut_env.yaml` file can be used to create a conda environment with the (very minimal) requried dependencies, if desired. First, install [conda](https://github.com/conda-forge/miniforge). Then, run the following command from the `hypermut` directory:
+
+```
+mamba env create -f `hypermut_env.yaml`
+```
+
+This will create a hypermut conda environment that can be activated using:
+
+```
+conda activate hypermut
 ```
 
 ## Running Hypermut 3.0
@@ -39,7 +51,7 @@ Please choose the reference sequence carefully (see details below).
 To search for hypermutation by APOBEC3G or APOBEC3F using the example fasta file, you can run the command:
 
 ```
-python mutsearch.py -u example_summary_output.csv -o example_verbose_output.txt 'G,A,G,A,.,RD,.,YN|RC' < example.fasta
+python hypermut.py -u example_summary_output.csv -o example_verbose_output.txt 'G,A,G,A,.,RD,.,YN|RC' < example.fasta
 ```
 
 The input string takes the following form:
@@ -113,3 +125,11 @@ There are two outputs:
     - Potential mutation site
     - Whether the expected mutation was present (1) or not (0)
 
+
+## Tests
+
+To run the unit tests for the functions used in `hypermut.py`, you need `pytest` (which is included in the conda environment). Then you can run the command:
+
+```
+pytest test_hypermut.py
+```
