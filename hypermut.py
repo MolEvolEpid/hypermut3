@@ -201,9 +201,7 @@ def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_
 
       # 1 means complete primary or control site, fraction means partial primary or control site
       site = upstream_seq_prop * downstream_seq_prop
-      match_val = 0
-      if site != 0:
-        match_val=sum([x in chars_mut for x in chars_seq])/len(chars_seq)*site
+      match_val=sum([x in chars_mut for x in chars_seq])/len(chars_seq)*site
       if multistate == "strict" and (int(site) != site or int(match_val) != match_val): # ignore if multistate strict mode and not complete overlap
         site=0
         match_val=0
