@@ -42,9 +42,11 @@ def test_check_width():
 def test_check_context_overlap():
   check_context('G,A,G,A,.,RD,.,YN|RC')
   with pytest.raises(ValueError): 
+    check_context('G,A,G,A,.,RD|RD,.,YN|RC') 
+  with pytest.raises(ValueError): 
     check_context('G,A,G,A,.,RN,.,YN|RC')
-    with pytest.raises(Warning): 
-      check_context('G,A,G,A,.,RD,.,YN')
+  with pytest.warns(UserWarning):
+    check_context('G,A,G,A,.,RD,.,YC')
 
 def test_check_input_patterns():
   check_input_patterns('G,A,G,A,.,RD,.,YN|RC', list('GARDYNC'))
@@ -78,6 +80,15 @@ iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
                 "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"],
                 "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"],
                 "N": ["A", "C", "G", "T"]}
+
+def test_compute_context_prop():
+  assert compute_context_prop('ACGT', ['.'], iupac_dict) == 1
+  assert compute_context_prop('A', ['A'], iupac_dict) == 1
+  assert compute_context_prop('A', ['R'], iupac_dict) == 1
+  assert compute_context_prop('R', ['A'], iupac_dict) == 0.5
+  assert compute_context_prop('R', ['A', 'G'], iupac_dict) == 1
+  with pytest.raises(AssertionError): 
+    assert compute_context_prop('ACGT', 'A', iupac_dict) == 1
 
 def test_find_match_weight():
   assert find_match_weight('AGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1)

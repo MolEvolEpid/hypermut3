@@ -99,13 +99,15 @@ def check_context(patterns):
     contexts_control = [''.join(list(y)) for x in base_info_control for y in itertools.product(*x)]
 
     overlap = set(contexts_primary) & set(contexts_control)
-    n_patterns = len(set(contexts_primary)) + len(set(contexts_control))
+    n_patterns = len(list(contexts_primary)) + len(list(contexts_control))
     n_patterns_expected = 4**width
-    if len(overlap) != n_patterns_expected:
-        if len(overlap):
-            raise ValueError(f"Partially overlapping primary and control pattern contexts: {overlap}. This means that positions cannot be categorized uniquely into primary and control groups.")
-        if n_patterns != n_patterns_expected:
-            warnings.warn(f"Primary and control patterns (n= {str(n_patterns)}) do not create the full complement of possible patterns (n={str(n_patterns_expected)})", stacklevel=2)
+    #if len(overlap) != n_patterns_expected:
+    if len(overlap):
+        raise ValueError(f"Partially overlapping primary and control pattern contexts: {overlap}. This means that positions cannot be categorized uniquely into primary and control groups.")
+    elif n_patterns > n_patterns_expected:
+        raise ValueError(f"Redundant patterns identified. We expected a maximum of {str(n_patterns_expected)} patterns, but found {str(n_patterns)}. Please provide non-redundant patterns.")
+    elif n_patterns < n_patterns_expected:
+        warnings.warn(f"Primary and control patterns (n= {str(n_patterns)}) do not create the exact complement of possible patterns (n={str(n_patterns_expected)})", stacklevel=2)
 
 def check_input_patterns(patterns, iupac_codes):
     check_chars(patterns, iupac_codes+[',','.','|'],
@@ -174,6 +176,15 @@ def get_potential_matches(refseq, start, finish, regex):
         potentialmatches=regex.finditer(refseq,start)
     return(potentialmatches)
 
+def compute_context_prop(seq, context, iupac_dict):
+    prop = 1
+    if context[0] != '.':
+      assert len(context[0]) == len(seq)
+      prop = 0
+      for u in context:
+        prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(seq, list(u))])
+    return prop
+
 def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_context, iupac_dict, multistate):
     base = sequence[start:end]
     if base == '-':
@@ -186,21 +197,12 @@ def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_
       downstream_seq = None
       if downstream_context[0] != '.':
         downstream_seq = list(re.sub('-', '', sequence[start+1:])[:len(downstream_context[0])])
-      chars_seq = iupac_dict[base]
-      chars_mut = iupac_dict[mutto]
-      upstream_seq_prop = 1
-      if upstream_context[0] != '.':
-        upstream_seq_prop = 0
-        for u in upstream_context:
-          upstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(upstream_seq, list(u))])
-      downstream_seq_prop = 1
-      if downstream_context[0] != '.':
-        downstream_seq_prop = 0
-        for d in downstream_context:
-          downstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(downstream_seq, list(d))])
-
+      upstream_seq_prop = compute_context_prop(upstream_seq, upstream_context, iupac_dict)
+      downstream_seq_prop = compute_context_prop(downstream_seq, downstream_context, iupac_dict)
       # 1 means complete primary or control site, fraction means partial primary or control site
       site = upstream_seq_prop * downstream_seq_prop
+      chars_seq = iupac_dict[base]
+      chars_mut = iupac_dict[mutto]
       match_val=sum([x in chars_mut for x in chars_seq])/len(chars_seq)*site
       if multistate == "strict" and (int(site) != site or int(match_val) != match_val): # ignore if multistate strict mode and not complete overlap
         site=0
