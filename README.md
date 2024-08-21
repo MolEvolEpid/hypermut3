@@ -76,7 +76,7 @@ The script can also take the following optional command line arguments:
 
 - Context:
   - As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
-  - () **CANNOT** be used for grouping (i.e.,  G(GT|AA)), unlike Hypermut2.0.
+  - () **CANNOT** be used for grouping (i.e.,  G(GT|AA)), unlike Hypermut 2.0.
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
   - For technical reasons, the upstream and downstream context patterns must always match a fixed number of nucleotides.
