@@ -13,7 +13,7 @@ from scipy.stats import fisher_exact
 import itertools
 import warnings
 from math import prod
-usage="usage: mutsearch.py [-s start][-f finish][-h][-e (A|B|D)][-m (strict|partial)] [-o outfile] [-u summaryfile] 'mutfrom,mutto,controlfrom,controlto,mutupstream,mutdownstream,controlupstream,controldownstream' < inputseqs.fasta"
+usage="usage: primariesearch.py [-s start][-f finish][-h][-e (A|B|D)][-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream' < inputseqs.fasta"
 
 def isfixedwidth(regexpstring):
     try:
@@ -50,22 +50,22 @@ def check_chars(chars, good_chars, error_message):
 
 def check_width(context):
     context=re.sub('\\.', "", context)
-    (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(context, ",")
+    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(context, ",")
     # stop with error if any pattern isn't fixed width
-    if (not isfixedwidth(mutupstream)) or (not isfixedwidth(controlupstream)):
+    if (not isfixedwidth(primaryupstream)) or (not isfixedwidth(controlupstream)):
         die_widthnotfixed("upstream")
-    if (not isfixedwidth(mutdownstream)) or (not isfixedwidth(controldownstream)):
+    if (not isfixedwidth(primarydownstream)) or (not isfixedwidth(controldownstream)):
         die_widthnotfixed("dowwnstream")
-    if (not isfixedwidth(mutfrom)) or (not isfixedwidth(mutto)):
+    if (not isfixedwidth(primaryfrom)) or (not isfixedwidth(primaryto)):
         die_widthnotfixed("primary mutation")
     if (not isfixedwidth(controlfrom)) or (not isfixedwidth(controlto)):
         die_widthnotfixed("control mutation")
-    if len(widthonly(mutupstream)) != len(widthonly(controlupstream)):
+    if len(widthonly(primaryupstream)) != len(widthonly(controlupstream)):
         raise ValueError("Upstream primary and control patterns must be the same length")
-    if len(widthonly(mutdownstream)) != len(widthonly(controldownstream)):
+    if len(widthonly(primarydownstream)) != len(widthonly(controldownstream)):
         raise ValueError("Downstream primary and control patterns must be the same length")
     # return length of upstream+downstream context
-    return(len(widthonly(mutupstream))+len(widthonly(mutdownstream))) 
+    return(len(widthonly(primaryupstream))+len(widthonly(primarydownstream))) 
 
 def check_context(patterns):
     width = check_width(patterns)
@@ -87,19 +87,19 @@ def check_context(patterns):
     patterns=re.sub('W'," AT ",patterns) 
     patterns=re.sub('\\.', "", patterns)
 
-    (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
+    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
 
-    mut_pattern = '|'.join([y + x for x in mutdownstream.split('|') for y in mutupstream.split('|')])
+    primary_pattern = '|'.join([y + x for x in primarydownstream.split('|') for y in primaryupstream.split('|')])
     control_pattern = '|'.join([y + x for x in controldownstream.split('|') for y in controlupstream.split('|')])
 
-    base_info_mut = [[list(y) for y in x.split()] for x in mut_pattern.split('|')]
+    base_info_primary = [[list(y) for y in x.split()] for x in primary_pattern.split('|')]
     base_info_control = [[list(y) for y in x.split()] for x in control_pattern.split('|')]
 
-    contexts_mut = [''.join(list(y)) for x in base_info_mut for y in itertools.product(*x)]
+    contexts_primary = [''.join(list(y)) for x in base_info_primary for y in itertools.product(*x)]
     contexts_control = [''.join(list(y)) for x in base_info_control for y in itertools.product(*x)]
 
-    overlap = set(contexts_mut) & set(contexts_control)
-    n_patterns = len(set(contexts_mut)) + len(set(contexts_control))
+    overlap = set(contexts_primary) & set(contexts_control)
+    n_patterns = len(set(contexts_primary)) + len(set(contexts_control))
     n_patterns_expected = 4**width
     if len(overlap) != n_patterns_expected:
         if len(overlap):
@@ -110,10 +110,10 @@ def check_context(patterns):
 def check_input_patterns(patterns, iupac_codes):
     check_chars(patterns, iupac_codes+[',','.','|'],
                 "All patterns and mutations must include only IUPAC characters, '.', and '|'.")
-    (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
+    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
     # require mutation to be only one base
-    check_chars(mutfrom, iupac_codes, "Primary mutation from must be a single IUPAC character.")
-    check_chars(mutto, iupac_codes, "Primary mutation to must be a single IUPAC character.")
+    check_chars(primaryfrom, iupac_codes, "Primary mutation from must be a single IUPAC character.")
+    check_chars(primaryto, iupac_codes, "Primary mutation to must be a single IUPAC character.")
     check_chars(controlfrom, iupac_codes, "Control mutation from must be a single IUPAC character.")
     check_chars(controlto, iupac_codes, "Control mutation to must be a single IUPAC character.")
     # check for consistent context width and (undesired) overlap between primary and control contexts
@@ -227,8 +227,8 @@ def summarize_matches(refseq, queryseq, start, finish,
                 print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(match_val))
     return sites,matches
 
-def calc_fisher(mutsites, muts, controlsites, controls):
-    return fisher_exact([[muts, mutsites-muts],[controls,controlsites-controls]], alternative = 'greater')
+def calc_fisher(primarysites, primaries, controlsites, controls):
+    return fisher_exact([[primaries, primarysites-primaries],[controls,controlsites-controls]], alternative = 'greater')
  
 # main starts here #
 
@@ -285,7 +285,7 @@ if __name__ == '__main__':
         sys.exit()
 
     if sumfile:
-        sumfile.write("Sequence,Muts(Match Sites),Out of(Potential Mut Sites),Controls(Control Muts),Out of(Potential Controls),Rate Ratio(A/B)/(C/D),Fisher Exact P-value\n")
+        sumfile.write("Sequence,Primary Matches,Out of (Potential Primary Sites),Control Matches,Out of (Potential Controls),Rate Ratio(A/B)/(C/D),Fisher Exact P-value\n")
 
     origstdout=sys.stdout
     sys.stdout=outfile
@@ -304,17 +304,17 @@ if __name__ == '__main__':
     check_input_patterns(arg, iupac_codes)
 
     # original patterns
-    (mutfrom_orig, mutto_orig, controlfrom_orig, controlto_orig, mutupstream_orig, mutdownstream_orig, controlupstream_orig, controldownstream_orig)=str.split(arg, ",")
+    (primaryfrom_orig, primaryto_orig, controlfrom_orig, controlto_orig, primaryupstream_orig, primarydownstream_orig, controlupstream_orig, controldownstream_orig)=str.split(arg, ",")
     # convert different context options into a list
-    mutupstream_orig = mutupstream_orig.split('|')
-    mutdownstream_orig = mutdownstream_orig.split('|')
+    primaryupstream_orig = primaryupstream_orig.split('|')
+    primarydownstream_orig = primarydownstream_orig.split('|')
     controlupstream_orig = controlupstream_orig.split('|')
     controldownstream_orig = controldownstream_orig.split('|')
 
     # prep pattern for allowing gaps and multistate characters in the regular expression
-    # mutfrom and controlfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
+    # primaryfrom and controlfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
     arg = allow_gaps_multistate(arg, multistate)
-    (mutfrom, mutto, controlfrom, controlto, mutupstream, mutdownstream, controlupstream, controldownstream)=str.split(arg, ",")
+    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(arg, ",")
 
     if(sys.stdout):
         print("#regexps=",arg)
@@ -325,18 +325,18 @@ if __name__ == '__main__':
     # second confirms potential in descendant
     any_base = '[ACGTRYBDHVNWSKM]'
     if enforce=="D": # descendant
-        potentialmutre=compile_regex(mutfrom) 
+        potentialprimaryre=compile_regex(primaryfrom) 
         potentialcontrolre=compile_regex(controlfrom) 
-        secondmutre=compile_regex(any_base, mutupstream, mutdownstream) 
+        secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
         secondcontrolre=compile_regex(any_base, controlupstream, controldownstream)
     else: # both or ancestor
-        potentialmutre=compile_regex(mutfrom, mutupstream, mutdownstream) 
+        potentialprimaryre=compile_regex(primaryfrom, primaryupstream, primarydownstream) 
         potentialcontrolre=compile_regex(controlfrom, controlupstream, controldownstream)
         if enforce=="A": # ancestor
-            secondmutre=compile_regex(any_base) 
+            secondprimaryre=compile_regex(any_base) 
             secondcontrolre=compile_regex(any_base) 
         elif enforce=="B": # both
-            secondmutre=compile_regex(any_base, mutupstream, mutdownstream) 
+            secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
             secondcontrolre=compile_regex(any_base, controlupstream, controldownstream) 
         else:
             raise ValueError("unknown enforce value")
@@ -366,29 +366,29 @@ if __name__ == '__main__':
 
         seqs+=1
 
-        mutsites, muts = summarize_matches(refseq, sequence, start, finish, 
-                                           potentialmutre, secondmutre, 
-                                           mutto_orig, mutupstream_orig, mutdownstream_orig, 
+        primarysites, primaries = summarize_matches(refseq, sequence, start, finish, 
+                                           potentialprimaryre, secondprimaryre, 
+                                           primaryto_orig, primaryupstream_orig, primarydownstream_orig, 
                                            iupac_dict, multistate, seqs, name)
         
         controlsites, controls = summarize_matches(refseq, sequence, start, finish, 
                                                    potentialcontrolre, secondcontrolre, 
-                                                   mutto_orig, controlupstream_orig, controldownstream_orig, 
+                                                   primaryto_orig, controlupstream_orig, controldownstream_orig, 
                                                    iupac_dict, multistate, seqs, name)
 
         sys.stdout=origstdout
-        odds_ratio, pval = calc_fisher(mutsites, muts, controlsites, controls)
+        odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
 
         try:
-            ratio = "%0.2f" %(muts*controlsites/(1.0*mutsites*controls))
+            ratio = "%0.2f" %(primaries*controlsites/(1.0*primarysites*controls))
         except:
-            if muts*controlsites > 0:
+            if primaries*controlsites > 0:
                 ratio="inf" 
             else:
                 ratio="undef" 
     
         if sumfile:
-            s = name+","+str(muts)+","+str(mutsites)+","+str(controls) +","+str(controlsites) +","+ratio +",%.6g" %float(pval)+'\n' 
+            s = name+","+str(primaries)+","+str(primarysites)+","+str(controls) +","+str(controlsites) +","+ratio +",%.6g" %float(pval)+'\n' 
             sumfile.write(s)
 
         sys.stdout.flush()
