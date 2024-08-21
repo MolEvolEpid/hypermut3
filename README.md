@@ -22,7 +22,7 @@ Fisher's exact test is then used to detect any increase of mutation for the spec
 
 ## Installation
 
-Hypermut 3.0 is written in Python3 and has the following package requirements: sys, getopt, re, scipy.stats, itertools, warnings.
+Hypermut 3.0 is written in Python3 and has the following package requirements: sys, getopt, re, scipy.stats, itertools, warnings, math.
 
 To clone this repo:
 
@@ -55,7 +55,7 @@ The script can also take the following optional command line arguments:
 -s, --start        position at which to start searching for mutations (default: 0)
 -f, --finish       position at which to end searching for mutations (default: end of sequence)
 -e, --enforce      what sequence to enforce the context on: ancestor (A), descendant (D), or both (B) (default: A)
--m, --multistate   how to treat multistate characters (and - all nucleotides are present, or - one of the nucleotides is present, ignore - don't consider mutation sites with multistate characters) (default: and)
+-m, --multistate   how to treat multistate characters (strict, meaning that only completely overlapping matches are included; or partial, meaning that partially overlapping matches are included as fractions) (default: strict)
 -o, --outfile      verbose output file including potential sites and whether there was the correct mutation at those sites
 -u, --summaryfile  summary of mutation counts and potential sites for primary and control contexts
 ```
@@ -67,25 +67,27 @@ The script can also take the following optional command line arguments:
   - () can be used for grouping (i.e., one could also write G(GT|AA).
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
-  - For technical reasons, the upstream context pattern must always match a fixed number of nucleotides.
-    For example, A|(TC) is not allowed as an upstream pattern because it could have length 1 or 2.
+  - For technical reasons, the upstream and downstream context patterns must always match a fixed number of nucleotides.
+    For example, A|(TC) is not allowed as a pattern because it could have length 1 or 2.
   - The primary and control contexts cannot be overlapping.
 - Reference sequence:
   - The first sequence in the fasta file.
-  - Can only contain non-multistate characters and gaps (`-`).
+  - Can only contain non-multistate characters (ACGT) and gaps (`-`).
   - For an intrapatient set, the reference could be the consensus of all the sequences, assuming that the majority are not hypermutated.
   - For a set of unrelated sequences, the reference should probably be the consensus sequence for the appropriate subtype.
 - Query sequence(s):
-  - Can contain IUPAC characters and gaps (`-`).
-  - If the query sequence contains multistate characters, they can be treated as follows:
-    - All multistate characters are considered to be present in the sample ("and"). This makes sense if it is from sequencing of a population.
-      In this case, if the correct mutation is present in the multistate character, the match is considered partial (1/n_states_in_multistate_char). 
-    - A multistate character means that one of the bases is present in the sample ("or"). This makes sense if it is from sequencing a single clone.
-      In this case, if the correct mutation is present in the multistate character, the match is considered a complete match (1).
-    - Ignore any contexts where the mutation is a multistate character.
-      This makes sense if you have single clones and don't want to overcount potential matches.
-      In this case, these sites are not considered potential mutations even if the context is correct.
+  - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
   - Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
+  - If the query sequence contains multistate characters, they can be treated as follows: **ADD FIGURE FROM MANUSCRIPT ONCE COMPLETE**
+    - **Strict** (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). 
+     - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
+      - For the context, if the primary downstream context is `DT`, then `RT` in the query sequence would be considered the correct context. However, `NT` would not be considered the correct context. 
+      - This makes sense if the sequencing is from single clones and you don't want to consider ambiguous matches.
+    - **Partial**: Partially overlapping matches (for the mutation and the context) are considered using the equation: **ADD EQUATION FROM PAPER ONCE COMPLETE**.  
+       - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
+      - For the context, if the primary downstream context is `DT`, then a query `NT` context would be split between primary (75%) and control (25%) patterns. 
+      - This makes sense if the sequence is derived from a population.   
+ 
 
 ## Output
 
@@ -96,9 +98,9 @@ There are two outputs:
   - Columns for:
     - Sequence name
     - Number of actual primary mutations 
-    - Number of potential primary mutations 
+    - Number of potential primary mutations (correct context)
     - Number of actual control mutations 
-    - Number of potential control mutations
+    - Number of potential control mutations (correct context)
     - Rate ratio of primary vs. control
     - Fisher's exact p-value
 - Verbose output:
