@@ -13,7 +13,7 @@ from scipy.stats import fisher_exact
 import itertools
 import warnings
 from math import prod
-usage="usage: mutsearch.py [-s start] [-f finish] [-h] [-e (A|B|D)] [-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream' < inputseqs.fasta"
+usage="usage: hypermut.py [-s start] [-f finish] [-h] [-e (A|B|D)] [-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream' < inputseqs.fasta"
 
 def isfixedwidth(regexpstring):
     try:
