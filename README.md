@@ -33,7 +33,7 @@ git clone https://github.com/MolEvolEpid/hypermut
 The `hypermut_env.yaml` file can be used to create a conda environment with the (very minimal) requried dependencies, if desired. First, install [conda](https://github.com/conda-forge/miniforge). Then, run the following command from the `hypermut` directory:
 
 ```
-mamba env create -f `hypermut_env.yaml`
+mamba env create -f hypermut_env.yaml
 ```
 
 This will create a hypermut conda environment that can be activated using:
