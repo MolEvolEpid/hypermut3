@@ -182,22 +182,22 @@ def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_
     else:
       upstream_seq = None
       if upstream_context[0] != '.':
-        upstream_seq = sequence[start-len(upstream_context[0]):start]
+        upstream_seq = list(re.sub('-', '', sequence[:start])[-len(upstream_context[0]):])
       downstream_seq = None
       if downstream_context[0] != '.':
-        downstream_seq = sequence[start+1:end+len(downstream_context[0])]
+        downstream_seq = list(re.sub('-', '', sequence[start+1:])[:len(downstream_context[0])])
       chars_seq = iupac_dict[base]
       chars_mut = iupac_dict[mutto]
       upstream_seq_prop = 1
       if upstream_context[0] != '.':
         upstream_seq_prop = 0
         for u in upstream_context:
-          upstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(list(re.sub('-', '', upstream_seq)), list(u))])
+          upstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(upstream_seq, list(u))])
       downstream_seq_prop = 1
       if downstream_context[0] != '.':
         downstream_seq_prop = 0
         for d in downstream_context:
-          downstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(list(re.sub('-', '', downstream_seq)), list(d))])
+          downstream_seq_prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(downstream_seq, list(d))])
 
       # 1 means complete primary or control site, fraction means partial primary or control site
       site = upstream_seq_prop * downstream_seq_prop
