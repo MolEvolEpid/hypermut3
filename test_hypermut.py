@@ -1,6 +1,6 @@
 import pytest
 
-from mutsearch import *
+from hypermut import *
 
 def test_isfixedwidth():
   assert isfixedwidth('A') == True
