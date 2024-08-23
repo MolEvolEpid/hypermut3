@@ -13,6 +13,8 @@ from scipy.stats import fisher_exact
 import itertools
 import warnings
 from math import prod
+
+# STILL NO WAY TO HAVE DIFFERENT "OR" FOR UPSTREAM AND DOWNSTREAM TOGETHER. IS THAT OKAY??
 usage="usage: hypermut.py [-s start] [-f finish] [-h] [-e (A|B|D)] [-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream' < inputseqs.fasta"
 
 def isfixedwidth(regexpstring):
@@ -50,20 +52,14 @@ def check_chars(chars, good_chars, error_message):
 
 def check_width(context):
     context=re.sub('\\.', "", context)
-    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(context, ",")
+    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(context, ",")
     # stop with error if any pattern isn't fixed width
-    if (not isfixedwidth(primaryupstream)) or (not isfixedwidth(controlupstream)):
+    if not isfixedwidth(primaryupstream):
         die_widthnotfixed("upstream")
-    if (not isfixedwidth(primarydownstream)) or (not isfixedwidth(controldownstream)):
-        die_widthnotfixed("dowwnstream")
+    if not isfixedwidth(primarydownstream):
+        die_widthnotfixed("upstream")
     if (not isfixedwidth(primaryfrom)) or (not isfixedwidth(primaryto)):
-        die_widthnotfixed("primary mutation")
-    if (not isfixedwidth(controlfrom)) or (not isfixedwidth(controlto)):
-        die_widthnotfixed("control mutation")
-    if len(widthonly(primaryupstream)) != len(widthonly(controlupstream)):
-        raise ValueError("Upstream primary and control patterns must be the same length")
-    if len(widthonly(primarydownstream)) != len(widthonly(controldownstream)):
-        raise ValueError("Downstream primary and control patterns must be the same length")
+        die_widthnotfixed("mutation")
     # return length of upstream+downstream context
     return(len(widthonly(primaryupstream))+len(widthonly(primarydownstream))) 
 
@@ -87,37 +83,19 @@ def check_context(patterns):
     patterns=re.sub('W'," AT ",patterns) 
     patterns=re.sub('\\.', "", patterns)
 
-    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
+    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(patterns, ",")    
 
     primary_pattern = '|'.join([y + x for x in primarydownstream.split('|') for y in primaryupstream.split('|')])
-    control_pattern = '|'.join([y + x for x in controldownstream.split('|') for y in controlupstream.split('|')])
-
     base_info_primary = [[list(y) for y in x.split()] for x in primary_pattern.split('|')]
-    base_info_control = [[list(y) for y in x.split()] for x in control_pattern.split('|')]
-
     contexts_primary = [''.join(list(y)) for x in base_info_primary for y in itertools.product(*x)]
-    contexts_control = [''.join(list(y)) for x in base_info_control for y in itertools.product(*x)]
-
-    overlap = set(contexts_primary) & set(contexts_control)
-    n_patterns = len(list(contexts_primary)) + len(list(contexts_control))
-    n_patterns_expected = 4**width
-    #if len(overlap) != n_patterns_expected:
-    if len(overlap):
-        raise ValueError(f"Partially overlapping primary and control pattern contexts: {overlap}. This means that positions cannot be categorized uniquely into primary and control groups.")
-    elif n_patterns > n_patterns_expected:
-        raise ValueError(f"Redundant patterns identified. We expected a maximum of {str(n_patterns_expected)} patterns, but found {str(n_patterns)}. Please provide non-redundant patterns.")
-    elif n_patterns < n_patterns_expected:
-        warnings.warn(f"Primary and control patterns (n= {str(n_patterns)}) do not create the exact complement of possible patterns (n={str(n_patterns_expected)})", stacklevel=2)
 
 def check_input_patterns(patterns, iupac_codes):
     check_chars(patterns, iupac_codes+[',','.','|'],
                 "All patterns and mutations must include only IUPAC characters, '.', and '|'.")
-    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(patterns, ",")    
+    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(patterns, ",")    
     # require mutation to be only one base
     check_chars(primaryfrom, iupac_codes, "Primary mutation from must be a single IUPAC character.")
     check_chars(primaryto, iupac_codes, "Primary mutation to must be a single IUPAC character.")
-    check_chars(controlfrom, iupac_codes, "Control mutation from must be a single IUPAC character.")
-    check_chars(controlto, iupac_codes, "Control mutation to must be a single IUPAC character.")
     # check for consistent context width and (undesired) overlap between primary and control contexts
     check_context(patterns)
 
@@ -156,7 +134,6 @@ def allow_gaps_multistate(pattern, multistate):
         pattern=re.sub(re.escape('[-]*AGTRDWK[-]*'),"[-]*[AGTRDWKYBHVNSM][-]*",pattern)
         pattern=re.sub(re.escape('[-]*ACTHYWM[-]*'),"[-]*[ACTHYWMRBDVNSK][-]*",pattern)
         pattern=re.sub(re.escape('[-]*ACGRVSM[-]*'),"[-]*[ACGRVSMYBDHNWK][-]*",pattern)
-
     return(pattern)
 
 def compile_regex(mutation, upstream=None, downstream=None):
@@ -179,7 +156,6 @@ def get_potential_matches(refseq, start, finish, regex):
 def compute_context_prop(seq, context, iupac_dict):
     prop = 1
     if context[0] != '.':
-      assert len(context[0]) == len(seq)
       prop = 0
       for u in context:
         prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(seq, list(u))])
@@ -187,45 +163,52 @@ def compute_context_prop(seq, context, iupac_dict):
 
 def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_context, iupac_dict, multistate):
     base = sequence[start:end]
-    if base == '-':
-      site = 0
-      match_val = 0
-    else:
+    site_primary = matchval_primary = site_control = matchval_control = 0
+    if base != '-':
       upstream_seq = None
+      up_same_len = True
       if upstream_context[0] != '.':
         upstream_seq = list(re.sub('-', '', sequence[:start])[-len(upstream_context[0]):])
+        up_same_len = len(upstream_context[0]) == len(upstream_seq)
       downstream_seq = None
+      down_same_len = True
       if downstream_context[0] != '.':
         downstream_seq = list(re.sub('-', '', sequence[start+1:])[:len(downstream_context[0])])
-      upstream_seq_prop = compute_context_prop(upstream_seq, upstream_context, iupac_dict)
-      downstream_seq_prop = compute_context_prop(downstream_seq, downstream_context, iupac_dict)
-      # 1 means complete primary or control site, fraction means partial primary or control site
-      site = upstream_seq_prop * downstream_seq_prop
-      chars_seq = iupac_dict[base]
-      chars_mut = iupac_dict[mutto]
-      match_val=sum([x in chars_mut for x in chars_seq])/len(chars_seq)*site
-      if multistate == "strict" and (int(site) != site or int(match_val) != match_val): # ignore if multistate strict mode and not complete overlap
-        site=0
-        match_val=0
-
-    return site,match_val
+        down_same_len = len(downstream_context[0]) == len(downstream_seq)
+      if up_same_len and down_same_len:
+        upstream_seq_prop_primary = compute_context_prop(upstream_seq, upstream_context, iupac_dict)
+        downstream_seq_prop_primary = compute_context_prop(downstream_seq, downstream_context, iupac_dict)
+        # 1 means complete primary or control site, fraction means partial primary or control site
+        site_primary = upstream_seq_prop_primary * downstream_seq_prop_primary
+        site_control = 1-site_primary
+        chars_seq = iupac_dict[base]
+        chars_mut = iupac_dict[mutto]
+        correct_mut = sum([x in chars_mut for x in chars_seq])/len(chars_seq)
+        matchval_primary=correct_mut*site_primary
+        matchval_control=correct_mut*site_control
+      if multistate == "strict" and (int(site_primary) != site_primary or int(matchval_primary) != matchval_primary): # ignore if multistate strict mode and not complete overlap
+        site_primary = matchval_primary = site_control = matchval_control = 0
+    return site_primary,matchval_primary,site_control,matchval_control
 
 def summarize_matches(refseq, queryseq, start, finish, 
                       potentialre, secondre, 
                       mutto_orig, upstream_orig, downstream_orig, 
                       iupac_dict, multistate, seqs, name):
-    (sites,matches)=(0,0)  # sites= potentials also passing secondre
+    sites_primary = matches_primary = sites_control = matches_control = 0  # sites= potentials also passing secondre
     potentials=get_potential_matches(refseq,start,finish,potentialre)
     for mymatch in potentials:
-        if secondre.match(queryseq,mymatch.start()): #optional match arg
-            site, match_val = find_match_weight(queryseq, mymatch.start(), mymatch.end(), 
-                                                mutto_orig, upstream_orig, downstream_orig, 
-                                                iupac_dict, multistate)
-            sites+=site
-            matches+=match_val
-            if(sys.stdout):
-                print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(match_val))
-    return sites,matches
+        site_primary, matchval_primary, site_control, matchval_control = \
+            find_match_weight(queryseq, mymatch.start(), mymatch.end(), 
+                              mutto_orig, upstream_orig, downstream_orig, 
+                              iupac_dict, multistate)
+        sites_primary+=site_primary
+        matches_primary+=matchval_primary
+        sites_control+=site_control
+        matches_control+=matchval_control
+        # FIGURE OUT HOW TO PRINT RELEVANT INFO TO FILE
+        #if(sys.stdout):
+        #    print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(match_val))
+    return sites_primary,matches_primary,sites_control,matches_control
 
 def calc_fisher(primarysites, primaries, controlsites, controls):
     return fisher_exact([[primaries, primarysites-primaries],[controls,controlsites-controls]], alternative = 'greater')
@@ -304,17 +287,15 @@ if __name__ == '__main__':
     check_input_patterns(arg, iupac_codes)
 
     # original patterns
-    (primaryfrom_orig, primaryto_orig, controlfrom_orig, controlto_orig, primaryupstream_orig, primarydownstream_orig, controlupstream_orig, controldownstream_orig)=str.split(arg, ",")
+    (primaryfrom_orig, primaryto_orig, primaryupstream_orig, primarydownstream_orig)=str.split(arg, ",")
     # convert different context options into a list
     primaryupstream_orig = primaryupstream_orig.split('|')
     primarydownstream_orig = primarydownstream_orig.split('|')
-    controlupstream_orig = controlupstream_orig.split('|')
-    controldownstream_orig = controldownstream_orig.split('|')
 
     # prep pattern for allowing gaps and multistate characters in the regular expression
     # primaryfrom and controlfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
     arg = allow_gaps_multistate(arg, multistate)
-    (primaryfrom, primaryto, controlfrom, controlto, primaryupstream, primarydownstream, controlupstream, controldownstream)=str.split(arg, ",")
+    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(arg, ",")
 
     if(sys.stdout):
         print("#regexps=",arg)
@@ -326,18 +307,13 @@ if __name__ == '__main__':
     any_base = '[ACGTRYBDHVNWSKM]'
     if enforce=="D": # descendant
         potentialprimaryre=compile_regex(primaryfrom) 
-        potentialcontrolre=compile_regex(controlfrom) 
         secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
-        secondcontrolre=compile_regex(any_base, controlupstream, controldownstream)
     else: # both or ancestor
         potentialprimaryre=compile_regex(primaryfrom, primaryupstream, primarydownstream) 
-        potentialcontrolre=compile_regex(controlfrom, controlupstream, controldownstream)
         if enforce=="A": # ancestor
             secondprimaryre=compile_regex(any_base) 
-            secondcontrolre=compile_regex(any_base) 
         elif enforce=="B": # both
             secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
-            secondcontrolre=compile_regex(any_base, controlupstream, controldownstream) 
         else:
             raise ValueError("unknown enforce value")
 
@@ -365,16 +341,10 @@ if __name__ == '__main__':
         check_chars(sequence, iupac_codes+['-'], 'Query sequences must contain only IUPAC characters or - (for gap).')
 
         seqs+=1
-
-        primarysites, primaries = summarize_matches(refseq, sequence, start, finish, 
+        primarysites, primaries, controlsites, controls = summarize_matches(refseq, sequence, start, finish, 
                                            potentialprimaryre, secondprimaryre, 
                                            primaryto_orig, primaryupstream_orig, primarydownstream_orig, 
                                            iupac_dict, multistate, seqs, name)
-        
-        controlsites, controls = summarize_matches(refseq, sequence, start, finish, 
-                                                   potentialcontrolre, secondcontrolre, 
-                                                   primaryto_orig, controlupstream_orig, controldownstream_orig, 
-                                                   iupac_dict, multistate, seqs, name)
 
         sys.stdout=origstdout
         odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)

@@ -24,34 +24,32 @@ def test_check_chars():
     check_chars('ABCD', list('ABC'), 'Error')
 
 def test_check_width():
-  assert check_width('G,A,G,A,.,RD,.,YN|RC') == 2
-  assert check_width('G,A,G,A,A,RD,B,YN|RC') == 3
+  assert check_width('G,A,.,RD') == 2
+  assert check_width('G,A,A,RD') == 3
   with pytest.raises(SystemExit): 
-    check_width('G,A,G,A,.,RD,G|TT,YN|RC')
+    check_width('G,A,.,G|TT')
   with pytest.raises(SystemExit): 
-    check_width('G,A,G,A,.,RD,.,Y|RC')
-  with pytest.raises(SystemExit): 
-    check_width('G|TT,A,G,A,.,RD,.,YN|RC')
-  with pytest.raises(SystemExit): 
-    check_width('G,A,G|TT,A,.,RD,.,YN|RC')
-  with pytest.raises(ValueError): 
-    check_width('G,A,G,A,.,R,.,YN|RC')
-  with pytest.raises(ValueError): 
-    check_width('G,A,G,A,A,RD,AG,YN|RC')
+    check_width('G|TT,A,.,RD')
+  # with pytest.raises(ValueError): 
+  #   check_width('G,A,G,A,.,R,.,YN|RC')
+  # with pytest.raises(ValueError): 
+  #   check_width('G,A,G,A,A,RD,AG,YN|RC')
 
 def test_check_context_overlap():
-  check_context('G,A,G,A,.,RD,.,YN|RC')
+  check_context('G,A,.,RD')
+  check_context('G,A,A,RD')
+  check_context('G,A,R,D')
   with pytest.raises(ValueError): 
-    check_context('G,A,G,A,.,RD|RD,.,YN|RC') 
-  with pytest.raises(ValueError): 
-    check_context('G,A,G,A,.,RN,.,YN|RC')
-  with pytest.warns(UserWarning):
-    check_context('G,A,G,A,.,RD,.,YC')
+    check_context('G,A,.,RD|RD')
+  # with pytest.raises(ValueError): 
+  #   check_context('G,A,G,A,.,RN,.,YN|RC')
+  # with pytest.warns(UserWarning):
+  #   check_context('G,A,G,A,.,RD,.,YC')
 
 def test_check_input_patterns():
-  check_input_patterns('G,A,G,A,.,RD,.,YN|RC', list('GARDYNC'))
+  check_input_patterns('G,A,.,RD', list('GARDYNC'))
   with pytest.raises(ValueError): 
-    check_input_patterns('Z,A,G,A,.,RD,.,YN|RC', list('GARDYNC'))
+    check_input_patterns('Z,A,.,RD', list('GARDYNC'))
 
 def test_allow_gaps_multistate():
   assert allow_gaps_multistate('A', 'strict') == '[-]*[A][-]*'
@@ -87,57 +85,75 @@ def test_compute_context_prop():
   assert compute_context_prop('A', ['R'], iupac_dict) == 1
   assert compute_context_prop('R', ['A'], iupac_dict) == 0.5
   assert compute_context_prop('R', ['A', 'G'], iupac_dict) == 1
-  with pytest.raises(AssertionError): 
-    assert compute_context_prop('ACGT', 'A', iupac_dict) == 1
+  assert compute_context_prop('NT', ['RD'], iupac_dict) == 0.5
+  assert compute_context_prop('NT', ['YN', 'RC'], iupac_dict) == 0.5
+  assert compute_context_prop('WS', ['RD'], iupac_dict) == 0.25
+  assert compute_context_prop('WS', ['YN', 'RC'], iupac_dict) == 0.75
+  assert compute_context_prop('N', ['R'], iupac_dict) == 0.5
+  assert compute_context_prop('N', ['Y'], iupac_dict) == 0.5
+  assert compute_context_prop('NN', ['RR'], iupac_dict) == 0.25
+  assert compute_context_prop('NN', ['YY', 'RY', 'YR'], iupac_dict) == 0.75
+  #with pytest.raises(AssertionError): 
+  #  assert compute_context_prop('ACGT', 'A', iupac_dict) == 1
 
 def test_find_match_weight():
-  assert find_match_weight('AGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('AGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1)
-  assert find_match_weight('TGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,0)
-  assert find_match_weight('TGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,0)
-  assert find_match_weight('AGC', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('AGC', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0,0)
-  assert find_match_weight('A-GC', 1, 2, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('A-GC', 1, 2, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0,0)
-  assert find_match_weight('A-GT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('A-GT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1)
-  assert find_match_weight('RGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('RGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,0.5)
-  assert find_match_weight('AGR', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('AGR', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1)
-  assert find_match_weight('ANT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('ANT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.5,0.5)
-  assert find_match_weight('RNT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('RNT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.5,0.25)
-  assert find_match_weight('A-GN', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('A-GN', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.75,0.75)
-  assert find_match_weight('TAAGT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('TAAGT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('ATGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,0)
-  assert find_match_weight('AAGC', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('A-GC', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('-AA-GT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('ARGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('ARGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (1,0.5)
-  assert find_match_weight('AAGR', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('AANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('AANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5)
-  assert find_match_weight('ARNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0)
-  assert find_match_weight('ARNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.25)
-  assert find_match_weight('RAAT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5)
-  assert find_match_weight('RANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.25,0.25)
-  assert find_match_weight('RRNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.25,0.5*0.25)
-  assert find_match_weight('R-A-GD', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5)
-  assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,1)
-  assert find_match_weight('ATGT', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,0)
-  assert find_match_weight('AAAC', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,1)
+  assert find_match_weight('AGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('AGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1,0,0)
+  assert find_match_weight('TGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,0,0,0)
+  assert find_match_weight('TGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,0,0,0)
+  assert find_match_weight('AGC', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,1,1)
+  assert find_match_weight('AGC', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0,0,1,1)
+  assert find_match_weight('A-GC', 1, 2, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('A-GC', 1, 2, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0,0,0,0)
+  assert find_match_weight('A-GT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('A-GT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1,0,0)
+  assert find_match_weight('RGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('RGT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,0.5,0,0)
+  assert find_match_weight('AGR', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('AGR', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (1,1,0,0)
+  assert find_match_weight('ANT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('ANT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.5,0.5,0.5,0.5)
+  assert find_match_weight('RNT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('RNT', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.5,0.25,0.5,0.25)
+  assert find_match_weight('A-GN', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('A-GN', 0, 1, 'A', ['.'], ['RD'], iupac_dict, 'partial') == (0.75,0.75,0.25,0.25)
+  assert find_match_weight('TAAGT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('TAAGT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('ATGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,0,0,0)
+  assert find_match_weight('AAGC', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0,1,1)
+  assert find_match_weight('A-GC', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('-AA-GT', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('ARGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('ARGT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (1,0.5,0,0)
+  assert find_match_weight('AAGR', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('AANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('AANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5,0.5,0.5)
+  assert find_match_weight('ARNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'strict') == (0,0,0,0)
+  assert find_match_weight('ARNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.25,0.5,0.25)
+  assert find_match_weight('RAAT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5,0.5,0.5)
+  assert find_match_weight('RANT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.25,0.25,0.75,0.75)
+  assert find_match_weight('RRNT', 1, 2, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.25,0.5*0.25,0.75,0.5*0.75)
+  assert find_match_weight('R-A-GD', 2, 3, 'A', ['A'], ['RD'], iupac_dict, 'partial') == (0.5,0.5,0.5,0.5)
+  assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD', 'RD'], iupac_dict, 'strict') == (1,1,0,0)
+  assert find_match_weight('ATGT', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,0,0,0)
+  assert find_match_weight('AAAC', 1, 2, 'A', ['A'], ['RD', 'AC'], iupac_dict, 'strict') == (1,1,0,0)
+
+  assert find_match_weight('ANN', 0, 1, 'A', ['.'], ['RR'], iupac_dict, 'partial') == (0.25,0.25,0.75,0.75)
+  assert find_match_weight('ANN', 0, 1, 'A', ['.'], ['YY', 'YR', 'RY'], iupac_dict, 'partial') == (0.75,0.75,0.25,0.25)
+  assert find_match_weight('NAN', 1, 2, 'A', ['R'], ['R'], iupac_dict, 'partial') == (0.25,0.25,0.75,0.75)
+  assert find_match_weight('NAN', 1, 2, 'A', ['Y'], ['Y'], iupac_dict, 'partial') == (0.25,0.25,0.75,0.75)
 
 def test_summarize_matches():
-  assert summarize_matches('GGT', 'AGT', 0, None,
+  assert summarize_matches('GGTT', 'AGTT', 0, None,
                            re.compile('G'), re.compile("(?<=)[-]*(A)[-]*(?=GT)",re.I),
                            'A', ['.'], ['RD'],
-                           iupac_dict, 'strict', 1, 'test') == (1,1)
+                           iupac_dict, 'strict', 1, 'test') == (1,1,1,0)
+  assert summarize_matches('GAGAT', 'A-G-T', 0, None,
+                           re.compile('G'), re.compile("(?<=)[-]*(A)[-]*(?=[AGR][-]*[ACT])",re.I),
+                           'A', ['.'], ['RD'],
+                           iupac_dict, 'strict', 1, 'test') == (1,1,0,0)
   
 def test_calc_fisher():
   assert calc_fisher(69,4,52,1)[1] == 0.28266930809303686
