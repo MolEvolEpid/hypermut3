@@ -1,183 +1,122 @@
 #!/usr/bin/env python
-###!/sw/bin/python2.4
+###!/sw/bin/python3
 
-# this version is just supposed to find matches and print them to a file
-# and print a summary to stdout
+# Finds matches and prints (1) summary to stdout, and (2) match locations to a file
 # Note main argument now has 8 fields.
-
-# Print summary to stdout, locations to outfile
    
 import sys, getopt
 import re
 from scipy.stats import fisher_exact
-import itertools
+from itertools import product
 import warnings
 from math import prod
 
-# STILL NO WAY TO HAVE DIFFERENT "OR" FOR UPSTREAM AND DOWNSTREAM TOGETHER. IS THAT OKAY??
-usage="usage: hypermut.py [-s start] [-f finish] [-h] [-e (A|B|D)] [-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream' < inputseqs.fasta"
+usage="usage: hypermut.py [-s start] [-f finish] [-h] [-e (A|B|D)] [-i (True/False)] [-m (strict|partial)] [-o outfile] [-u summaryfile] 'primaryfrom,primaryto,primaryupstream,primarydownstream' < inputseqs.fasta"
 
-def isfixedwidth(regexpstring):
+def check_width(regexpstring, culprit):
     try:
         tmp=re.compile("(?<="+regexpstring + ")")
     except:
-        return(False)
-    return(True)
-
-def die_widthnotfixed(culprit):
-    try:
-        sys.stdout=origstdout
-    except:
-        pass
-    print("error: ", culprit," pattern must correspond to a fixed length expression")
-    print("(example: T|GC is not allowed).")
-    print("Please try again using a ", culprit, "pattern that has only one possible width.")
-    sys.exit(1)
-
-
-def widthonly(regexpstring):
-    if not isfixedwidth(regexpstring):
-        raise ValueError("not fixed width")
-    dotstring=""
-    while (not isfixedwidth(regexpstring+"|"+dotstring)) and len(dotstring)<500:
-        dotstring = dotstring + "."
-    if len(dotstring)==500:
-        raise ValueError("regexp too long (greater than 500)")
-    return dotstring
+        raise ValueError(f"{culprit} pattern must correspond to a fixed length expression (example: T|GC is not allowed) Please try again using a {culprit} pattern that has only one possible width.")
 
 def check_chars(chars, good_chars, error_message):
     bad_chars = [x for x in set(chars) if x not in good_chars]
     if len(bad_chars):
         raise ValueError(f"{error_message}. Yours contains: {bad_chars}")
-
-def check_width(context):
-    context=re.sub('\\.', "", context)
-    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(context, ",")
-    # stop with error if any pattern isn't fixed width
-    if not isfixedwidth(primaryupstream):
-        die_widthnotfixed("upstream")
-    if not isfixedwidth(primarydownstream):
-        die_widthnotfixed("upstream")
-    if (not isfixedwidth(primaryfrom)) or (not isfixedwidth(primaryto)):
-        die_widthnotfixed("mutation")
-    # return length of upstream+downstream context
-    return(len(widthonly(primaryupstream))+len(widthonly(primarydownstream))) 
-
-def check_context(patterns):
-    width = check_width(patterns)
-    patterns=re.sub('A'," A ",patterns)
-    patterns=re.sub('C'," C ",patterns)
-    patterns=re.sub('G'," G ",patterns)
-    patterns=re.sub('T'," T ",patterns)
-    # standard IUPAC codes translated to regexps
-    patterns=re.sub('N'," ACGT ",patterns) 
-    patterns=re.sub('R'," AG ",patterns)
-    patterns=re.sub('Y'," CT ",patterns)
-    patterns=re.sub('B'," CGT ",patterns)
-    patterns=re.sub('D'," AGT ",patterns)
-    patterns=re.sub('H'," ACT ",patterns)
-    patterns=re.sub('V'," ACG ",patterns)
-    patterns=re.sub('M'," AC ",patterns)
-    patterns=re.sub('K'," GT ",patterns)
-    patterns=re.sub('S'," CG ",patterns)
-    patterns=re.sub('W'," AT ",patterns) 
-    patterns=re.sub('\\.', "", patterns)
-
-    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(patterns, ",")    
-
-    primary_pattern = '|'.join([y + x for x in primarydownstream.split('|') for y in primaryupstream.split('|')])
-    base_info_primary = [[list(y) for y in x.split()] for x in primary_pattern.split('|')]
-    contexts_primary = [''.join(list(y)) for x in base_info_primary for y in itertools.product(*x)]
-
-def check_input_patterns(patterns, iupac_codes):
-    check_chars(patterns, iupac_codes+[',','.','|'],
+    
+def check_input_patterns(patterns, iupac_dict):
+    # check that all patterns consist of IUPAC characters
+    check_chars(patterns, list(iupac_dict.keys())+[',','.','|'],
                 "All patterns and mutations must include only IUPAC characters, '.', and '|'.")
-    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(patterns, ",")    
-    # require mutation to be only one base
-    check_chars(primaryfrom, iupac_codes, "Primary mutation from must be a single IUPAC character.")
-    check_chars(primaryto, iupac_codes, "Primary mutation to must be a single IUPAC character.")
-    # check for consistent context width and (undesired) overlap between primary and control contexts
-    check_context(patterns)
 
-def allow_gaps_multistate(pattern, multistate):
-    # allow for gaps
-    pattern=re.sub('A',"[-]*[A][-]*",pattern)
-    pattern=re.sub('C',"[-]*[C][-]*",pattern)
-    pattern=re.sub('G',"[-]*[G][-]*",pattern)
-    pattern=re.sub('T',"[-]*[T][-]*",pattern)
-    # standard IUPAC codes translated to regexps, complete matches only
-    pattern=re.sub('R',"[-]*[AGR][-]*",pattern)
-    pattern=re.sub('Y',"[-]*[CTY][-]*",pattern)
-    pattern=re.sub('M',"[-]*[ACM][-]*",pattern)
-    pattern=re.sub('K',"[-]*[GTK][-]*",pattern)
-    pattern=re.sub('S',"[-]*[CGS][-]*",pattern)
-    pattern=re.sub('W',"[-]*[ATW][-]*",pattern)
-    pattern=re.sub('B',"[-]*[CGTYBSK][-]*",pattern)
-    pattern=re.sub('D',"[-]*[AGTRDWK][-]*",pattern)
-    pattern=re.sub('H',"[-]*[ACTHYWM][-]*",pattern)
-    pattern=re.sub('V',"[-]*[ACGRVSM][-]*",pattern)
-    pattern=re.sub('N',"[-]*[ACGTRYBDHVNWSKM][-]*",pattern)
-    pattern=re.sub('\\.', "", pattern)
-     # add in partial matches
-    if multistate == 'partial': 
-        pattern=re.sub(re.escape('[-]*[A][-]*'),"[-]*[ARDHVNWM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*[C][-]*'),"[-]*[CYBHVNSM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*[G][-]*'),"[-]*[GRBDVNSK][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*[T][-]*'),"[-]*[TYBDHNWK][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*[AGR][-]*'),"[-]*[AGRBDHVNWSKM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*[CTY][-]*'),"[-]*[CTYBDHVNWSKM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*ACM[-]*'),"[-]*[ACMRYBDHVNWS][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*GTK[-]*'),"[-]*[GTKRYBDHVNWS][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*CGS[-]*'),"[-]*[CGSRYBDHVNKM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*ATW[-]*'),"[-]*[ATWRYBDHVNKM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*CGTYBSK[-]*'),"[-]*[CGTYBSKRDHVNWM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*AGTRDWK[-]*'),"[-]*[AGTRDWKYBHVNSM][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*ACTHYWM[-]*'),"[-]*[ACTHYWMRBDVNSK][-]*",pattern)
-        pattern=re.sub(re.escape('[-]*ACGRVSM[-]*'),"[-]*[ACGRVSMYBDHNWK][-]*",pattern)
-    return(pattern)
+    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(patterns, ",")
 
-def compile_regex(mutation, upstream=None, downstream=None):
-    if upstream == None and downstream == None:
-        regex = re.compile(mutation,re.I)
-    elif upstream != None and downstream != None:
-        # use ?= "lookahead" and ?<= lookbehind so we can find overlapping patterns
-        regex = re.compile("(?<="+ upstream +")[-]*("+ mutation +")[-]*(?="+ downstream + ")",re.I)
-    else:
-        ValueError('upstream and downstream must both be None or neither be None.')
-    return regex
+    # stop with error if any pattern isn't fixed width
+    check_width(primaryupstream, "upstream")
+    check_width(primarydownstream, "downstream")
 
-def get_potential_matches(refseq, start, finish, regex):
-    if(finish):
-        potentialmatches=regex.finditer(refseq,start,finish)
-    else:
-        potentialmatches=regex.finditer(refseq,start)
-    return(potentialmatches)
+    try:
+        mutfrom = iupac_dict[primaryfrom]
+        mutto = iupac_dict[primaryto]
+    except:
+        # require mutation to be only one base
+        raise ValueError("Mutation from and to must each be a single IUPAC character.")        
+    # check for (undesired) overlap in mutation from and to
+    if sum([1 for x in mutfrom if x in mutto]) != 0:
+        warnings.warn("Mutation from and to have overlapping bases.")
 
-def compute_context_prop(seq, context, iupac_dict):
+    # check for (undesired) overlap in context
+    primary_pattern = re.sub('\\.', "", '|'.join([y + x for x in primarydownstream.split('|') for y in primaryupstream.split('|')]))
+    base_info_primary = [[iupac_dict[y] for y in list(x)] for x in primary_pattern.split('|')]
+    contexts_primary = [''.join(list(y)) for x in base_info_primary for y in product(*x)]
+    if len(contexts_primary) != len(set(contexts_primary)):
+        raise ValueError("Context is redundant. Please provide non-redundant patterns.")
+
+def compute_context_prop(refseq, seq, context, enforce, iupac_dict):
     prop = 1
     if context[0] != '.':
       prop = 0
-      for u in context:
-        prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(seq, list(u))])
+      if enforce == 'D':
+        for u in context:
+            prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(seq, list(u))])
+      elif enforce == 'A':
+        for u in context:
+            prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(refseq, list(u))])
+      elif enforce == 'B':
+        # this is only allowed in the strict context, so it should ultimately be 0 or 1
+        for u in context:
+            prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(seq, list(u))])
+            prop += prod([len([x for x in iupac_dict[s] if x in iupac_dict[c]])/len(iupac_dict[s]) for s,c in zip(refseq, list(u))])
+        prop = prop/2
+
     return prop
 
-def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_context, iupac_dict, multistate):
+def slice_seq(sequence, start, context_len, context_type, ignore_gaps):
+    if context_type == 'upstream':
+        if ignore_gaps:
+            seq_sliced = list(re.sub('-', '', sequence[:start])[-context_len:])
+        else:
+            seq_sliced = list(sequence[:start][-context_len:])
+    if context_type == 'downstream':
+        if ignore_gaps:
+            seq_sliced = list(re.sub('-', '', sequence[start+1:])[:context_len])
+        else:
+            seq_sliced = list(sequence[start+1:][:context_len])
+    return seq_sliced
+
+def find_match_weight(refseq, sequence, start, end, 
+                      mutto, upstream_context, downstream_context, 
+                      enforce, iupac_dict, multistate, ignore_gaps):
     base = sequence[start:end]
     site_primary = matchval_primary = site_control = matchval_control = 0
     if base != '-':
-      upstream_seq = None
-      up_same_len = True
-      if upstream_context[0] != '.':
-        upstream_seq = list(re.sub('-', '', sequence[:start])[-len(upstream_context[0]):])
-        up_same_len = len(upstream_context[0]) == len(upstream_seq)
-      downstream_seq = None
-      down_same_len = True
-      if downstream_context[0] != '.':
-        downstream_seq = list(re.sub('-', '', sequence[start+1:])[:len(downstream_context[0])])
-        down_same_len = len(downstream_context[0]) == len(downstream_seq)
+      upstream_ref = upstream_seq = downstream_ref = downstream_seq = []
+      up_same_len = down_same_len = True
+      if enforce == 'D':
+        if upstream_context[0] != '.':
+            upstream_seq = slice_seq(sequence, start, len(upstream_context[0]), 'upstream', ignore_gaps) 
+        if downstream_context[0] != '.':
+            downstream_seq = slice_seq(sequence, start, len(downstream_context[0]), 'downstream', ignore_gaps) 
+            down_same_len = len(downstream_context[0]) == len(downstream_seq)
+      elif enforce == 'A':
+        if upstream_context[0] != '.':
+            upstream_ref = slice_seq(refseq, start, len(upstream_context[0]), 'upstream', ignore_gaps) 
+            up_same_len = len(upstream_context[0]) == len(upstream_ref)
+        if downstream_context[0] != '.':
+            downstream_ref = slice_seq(refseq, start, len(downstream_context[0]), 'downstream', ignore_gaps) 
+            down_same_len = len(downstream_context[0]) == len(downstream_ref)
+      elif enforce == 'B':
+          if upstream_context[0] != '.':
+            upstream_ref = slice_seq(refseq, start, len(upstream_context[0]), 'upstream', ignore_gaps) 
+            upstream_seq = slice_seq(sequence, start, len(upstream_context[0]), 'upstream', ignore_gaps) 
+            up_same_len = len(upstream_context[0]) == len(upstream_ref) and len(upstream_context[0]) == len(upstream_seq)
+          if downstream_context[0] != '.':
+            downstream_ref = slice_seq(refseq, start, len(downstream_context[0]), 'downstream', ignore_gaps) 
+            downstream_seq = slice_seq(sequence, start, len(downstream_context[0]), 'downstream', ignore_gaps) 
+            down_same_len = len(downstream_context[0]) == len(downstream_ref) and len(downstream_context[0]) == len(downstream_seq)
       if up_same_len and down_same_len:
-        upstream_seq_prop_primary = compute_context_prop(upstream_seq, upstream_context, iupac_dict)
-        downstream_seq_prop_primary = compute_context_prop(downstream_seq, downstream_context, iupac_dict)
+        upstream_seq_prop_primary = compute_context_prop(upstream_ref, upstream_seq, upstream_context, enforce, iupac_dict)
+        downstream_seq_prop_primary = compute_context_prop(downstream_ref, downstream_seq, downstream_context, enforce, iupac_dict)
         # 1 means complete primary or control site, fraction means partial primary or control site
         site_primary = upstream_seq_prop_primary * downstream_seq_prop_primary
         site_control = 1-site_primary
@@ -186,38 +125,45 @@ def find_match_weight(sequence, start, end, mutto, upstream_context, downstream_
         correct_mut = sum([x in chars_mut for x in chars_seq])/len(chars_seq)
         matchval_primary=correct_mut*site_primary
         matchval_control=correct_mut*site_control
+      if not ignore_gaps:
+        if '-' in upstream_ref+upstream_seq+downstream_ref+downstream_seq:
+            site_primary = matchval_primary = site_control = matchval_control = 0
       if multistate == "strict" and (int(site_primary) != site_primary or int(matchval_primary) != matchval_primary): # ignore if multistate strict mode and not complete overlap
         site_primary = matchval_primary = site_control = matchval_control = 0
     return site_primary,matchval_primary,site_control,matchval_control
 
 def summarize_matches(refseq, queryseq, start, finish, 
-                      potentialre, secondre, 
+                      potentialre, enforce,
                       mutto_orig, upstream_orig, downstream_orig, 
-                      iupac_dict, multistate, seqs, name):
+                      iupac_dict, multistate, ignore_gaps, seqs, name):
     sites_primary = matches_primary = sites_control = matches_control = 0  # sites= potentials also passing secondre
-    potentials=get_potential_matches(refseq,start,finish,potentialre)
+    if finish is None:
+        potentials=potentialre.finditer(refseq,start)
+    else:
+        potentials=potentialre.finditer(refseq,start,finish)
     for mymatch in potentials:
         site_primary, matchval_primary, site_control, matchval_control = \
-            find_match_weight(queryseq, mymatch.start(), mymatch.end(), 
+            find_match_weight(refseq, queryseq, mymatch.start(), mymatch.end(), 
                               mutto_orig, upstream_orig, downstream_orig, 
-                              iupac_dict, multistate)
+                              enforce, iupac_dict, multistate, ignore_gaps)
         sites_primary+=site_primary
         matches_primary+=matchval_primary
         sites_control+=site_control
         matches_control+=matchval_control
-        # FIGURE OUT HOW TO PRINT RELEVANT INFO TO FILE
-        #if(sys.stdout):
-        #    print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(match_val))
+        if(sys.stdout):
+            if site_primary != 0:
+                print(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(matchval_primary))
+            if site_control != 0:
+                print(str(seqs) + "," + name + ",1," + str(mymatch.start()+1) + "," + str(matchval_control))
     return sites_primary,matches_primary,sites_control,matches_control
 
 def calc_fisher(primarysites, primaries, controlsites, controls):
     return fisher_exact([[primaries, primarysites-primaries],[controls,controlsites-controls]], alternative = 'greater')
  
 # main starts here #
-
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hs:f:e:m:o:u:", ["help", "start=","finish=","enforce=","multistate=","outfile=", "summaryfile="])
+        opts, args = getopt.getopt(sys.argv[1:], "h:s:f:e:m:o:u:i:", ["help", "start=","finish=","enforce=","multistate=","outfile=", "summaryfile=", "ignoregaps="])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(str(err))
@@ -226,11 +172,10 @@ if __name__ == '__main__':
 
     # defaults
     start=0
-    finish=None
-    outfile=None
-    sumfile=None
+    finish=outfile=sumfile=None
     enforce="D"  # first letter of Ancestor, Descendant, or Both
     multistate = "strict" # strict or partial
+    ignore_gaps = True # True or False
 
     for o, a in opts:
         if o in ("-o", "--outfile"):
@@ -262,6 +207,10 @@ if __name__ == '__main__':
             multistate=a.lower()
             if multistate not in ['strict', 'partial']:
                 raise ValueError("multistate must be strict or partial")
+        if o in ("-i", "--ignoregaps"):
+            if a[0].upper() not in ['T', 'F']:
+                raise ValueError('ignoregaps must be True or False')
+            ignore_gaps = a[0].upper() == 'T'
 
     if not (len(args)==1):
         print(usage)
@@ -277,14 +226,17 @@ if __name__ == '__main__':
     if(sys.stdout):
         print("#arg=", arg)
 
-    arg=arg.upper()
-    iupac_codes = list('ACGTRYBDHVNWSKM')
-    iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
-                "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"],
-                "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"],
-                "N": ["A", "C", "G", "T"]}
+    # only allow partial matches when context is enforced on query sequence only
+    if multistate == 'partial' and enforce != 'D':
+        raise ValueError("When multistate is partial, enforce must be D.")
 
-    check_input_patterns(arg, iupac_codes)
+    arg=arg.upper() # make sure all input bases are uppercase
+    iupac_dict = {"A": ["A"], "C": ["C"], "G": ["G"], "T": ["T"],
+                  "R": ["A", "G"], "Y": ["C", "T"], "S": ["G", "C"], "W": ["A", "T"], "K": ["G", "T"], "M": ["A", "C"],
+                  "B": ["C", "G", "T"], "D": ["A", "G", "T"], "H": ["A", "C", "T"], "V": ["A", "C", "G"],
+                  "N": ["A", "C", "G", "T"], "-": ["-"]}
+    
+    check_input_patterns(arg, iupac_dict)
 
     # original patterns
     (primaryfrom_orig, primaryto_orig, primaryupstream_orig, primarydownstream_orig)=str.split(arg, ",")
@@ -293,29 +245,12 @@ if __name__ == '__main__':
     primarydownstream_orig = primarydownstream_orig.split('|')
 
     # prep pattern for allowing gaps and multistate characters in the regular expression
-    # primaryfrom and controlfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
-    arg = allow_gaps_multistate(arg, multistate)
-    (primaryfrom, primaryto, primaryupstream, primarydownstream)=str.split(arg, ",")
+    # primaryfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
+    primaryfromre = re.compile('['+''.join(iupac_dict[primaryfrom_orig])+']',re.I)
 
     if(sys.stdout):
         print("#regexps=",arg)
         print("seq_num,seq_name,control,potential_mut_site,mut_match")    
-
-    # Note that the regexps will be applied to different strings depending on the value of enforce.
-    # potential always checked on ancestor
-    # second confirms potential in descendant
-    any_base = '[ACGTRYBDHVNWSKM]'
-    if enforce=="D": # descendant
-        potentialprimaryre=compile_regex(primaryfrom) 
-        secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
-    else: # both or ancestor
-        potentialprimaryre=compile_regex(primaryfrom, primaryupstream, primarydownstream) 
-        if enforce=="A": # ancestor
-            secondprimaryre=compile_regex(any_base) 
-        elif enforce=="B": # both
-            secondprimaryre=compile_regex(any_base, primaryupstream, primarydownstream) 
-        else:
-            raise ValueError("unknown enforce value")
 
     # start reading in fasta file
     line=sys.stdin.readline()
@@ -338,13 +273,14 @@ if __name__ == '__main__':
             sequence=sequence+line
             line=sys.stdin.readline()
         sequence=sequence.replace("\n","").upper()
-        check_chars(sequence, iupac_codes+['-'], 'Query sequences must contain only IUPAC characters or - (for gap).')
+        check_chars(sequence, list(iupac_dict.keys())+['-'], 'Query sequences must contain only IUPAC characters or - (for gap).')
 
         seqs+=1
-        primarysites, primaries, controlsites, controls = summarize_matches(refseq, sequence, start, finish, 
-                                           potentialprimaryre, secondprimaryre, 
-                                           primaryto_orig, primaryupstream_orig, primarydownstream_orig, 
-                                           iupac_dict, multistate, seqs, name)
+        primarysites, primaries, controlsites, controls = \
+            summarize_matches(refseq, sequence, start, finish, 
+                              primaryfromre, enforce,
+                              primaryto_orig, primaryupstream_orig, primarydownstream_orig, 
+                              iupac_dict, multistate, ignore_gaps, seqs, name)
 
         sys.stdout=origstdout
         odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
