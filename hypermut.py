@@ -169,8 +169,7 @@ iupac_dict = {"A": list("A"), "C": list("C"), "G": list("G"), "T": list("T"),
 
 # main starts here #
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(prog='Hypermut 3.0', 
-                                     description='Identify mutations in a user-defined context')
+    parser = argparse.ArgumentParser(prog='Hypermut 3.0', description='Identify mutations in a user-defined context')
     parser.add_argument('fasta', type=str,
                         help="Alignment file in fasta format")
     parser.add_argument('mutationfrom', type=str, 
@@ -182,23 +181,23 @@ if __name__ == '__main__':
     parser.add_argument('downstreamcontext', type=str,
                         help="Downstream nucleotide context of interest")
     parser.add_argument('--positionsfile', '-p', type=str, 
-                        help="Optional file path to output match positions")
+                        help="Optional file path to output potential mutation sites and whether there was the correct mutation at those sites")
     parser.add_argument('--summaryfile', '-s', type=str,
-                        help="Optional file path to output a summary of match positions")
+                        help="Optional file path to output a summary of mutation counts and potential sites for primary and control contexts")
     parser.add_argument('--enforce', '-e', type=str, 
                         choices=['A','D','B'], default='D',
-                        help="Whether to enforce the context on the ancestor/reference (A), descendant/query (D), or both (B)")
+                        help="What sequence to enforce the context on: ancestor/reference (A), descendant/query (D, default), or both (B)")
     parser.add_argument('--match', '-m', type=str, 
                         choices=['strict','partial'], default='strict',
-                        help="Whether to include only strict matches, or also include partial matches (not completely overlapping bases between query and context)")
+                        help="Whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping bases between query and context, partial)")
     parser.add_argument('--keepgaps', '-k', action='store_true',
-                        help="Whether to keep gaps in the alignment when identifying pattern matches")
+                        help="Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)")
     # also check that this is positive
     parser.add_argument('--begin', '-b', type=check_positive, default=0,
-                        help="Optional start position in alignment")
+                        help="Position at which to start searching for mutations (default: 0)")
     # also check that this is positive
     parser.add_argument('--finish', '-f', type=check_positive, 
-                        help="Optional end position in alignment")
+                        help="Position at which to end searching for mutations (default: end of sequence)")
     args=parser.parse_args()
 
     # only allow partial matches when context is enforced on query sequence only
@@ -263,7 +262,7 @@ if __name__ == '__main__':
 
         seqs+=1
         primarysites, primaries, controlsites, controls = \
-            summarize_matches(refseq, sequence, args.start, args.finish, 
+            summarize_matches(refseq, sequence, args.begin, args.finish, 
                               primaryfromre, args.enforce,
                               mutationto, primaryupstream_orig, primarydownstream_orig, 
                               iupac_dict, args.match, args.keepgaps, seqs, name, pf)
