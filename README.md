@@ -15,9 +15,8 @@ See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for m
 Hypermut 3.0 allows searching for mutations fitting a pattern you specify. 
 The positions that match the upstream context pattern, followed by the specified mutation (relative to the reference sequence, 
 assumed to be the first entered, and treated as ancestral) followed by the downstream context will be found. 
-Likewise, matches to the control pattern will be shown for comparison. 
+Matches to the opposite control pattern will be shown for comparison. 
 The context requirements can be enforced on the reference sequence, or on the query sequence (recommended, especially if the reference is distant) or both. 
-Normally only the contexts should differ between the control pattern and the test pattern. 
 Fisher's exact test is then used to detect any increase of mutation for the specified context compared to the control context.
 
 ## Installation
@@ -51,25 +50,37 @@ Please choose the reference sequence carefully (see details below).
 To search for hypermutation by APOBEC3G or APOBEC3F using the example fasta file, you can run the command:
 
 ```
-python hypermut.py -u example_summary_output.csv -o example_verbose_output.txt 'G,A,G,A,.,RD,.,YN|RC' < example.fasta
+python hypermut.py example.fasta G A . RD -s example_summary_output.csv -p example_positions_output.txt
 ```
 
-The input string takes the following form:
+The positional inputs are as follows:
 
 ```
-'mutfrom,mutto,controlfrom,controlto,primaryupstream,primarydownstream,controlupstream,controldownstream'
+  fasta                 Alignment file in fasta format
+  mutationfrom          Base in the reference to consider as a site of interest for nucleotide substitution
+  mutationto            Base in the query to consider a nucleotide substitution of interest
+  upstreamcontext       Upstream nucleotide context of interest
+  downstreamcontext     Downstream nucleotide context of interest
 ```
 
-The script can also take the following optional command line arguments:
+The optional arguments include:
 
 ```
--h, --help         help menu
--s, --start        position at which to start searching for mutations (default: 0)
--f, --finish       position at which to end searching for mutations (default: end of sequence)
--e, --enforce      what sequence to enforce the context on: ancestor (A), descendant (D), or both (B) (default: A)
--m, --multistate   how to treat multistate characters (strict, meaning that only completely overlapping matches are included; or partial, meaning that partially overlapping matches are included as fractions) (default: strict)
--o, --outfile      verbose output file including potential sites and whether there was the correct mutation at those sites
--u, --summaryfile  summary of mutation counts and potential sites for primary and control contexts
+-h, --help            show this help message and exit
+--positionsfile POSITIONSFILE, -p POSITIONSFILE
+                      Optional file path to output potential mutation sites and whether there was the correct mutation at those sites
+--summaryfile SUMMARYFILE, -s SUMMARYFILE
+                      Optional file path to output a summary of mutation counts and potential sites for primary and control contexts
+--enforce {A,D,B}, -e {A,D,B}
+                      What sequence to enforce the context on: ancestor/reference (A), descendant/query (D, default), or both (B)
+--match {strict,partial}, -m {strict,partial}
+                      Whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping
+                      bases between query and context, partial)
+--keepgaps, -k        Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)
+--begin BEGIN, -b BEGIN
+                      Position at which to start searching for mutations (default: 0)
+--finish FINISH, -f FINISH
+                      Position at which to end searching for mutations (default: end of sequence)
 ```
 
 ## Details
@@ -79,9 +90,8 @@ The script can also take the following optional command line arguments:
   - () **CANNOT** be used for grouping (i.e.,  G(GT|AA)), unlike Hypermut 2.0.
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
-  - For technical reasons, the upstream and downstream context patterns must always match a fixed number of nucleotides.
+  - The upstream and downstream context patterns must always match a fixed number of nucleotides.
     For example, A|(TC) is not allowed as a pattern because it could have length 1 or 2.
-  - The primary and control contexts cannot be overlapping.
 - Reference sequence:
   - The first sequence in the fasta file.
   - Can only contain non-multistate characters (ACGT) and gaps (`-`).
@@ -93,12 +103,12 @@ The script can also take the following optional command line arguments:
   - If the query sequence contains multistate characters, they can be treated as follows: **ADD FIGURE FROM MANUSCRIPT ONCE COMPLETE**
     - **Strict** (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). 
      - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
-      - For the context, if the primary downstream context is `DT`, then `RT` in the query sequence would be considered the correct context. However, `NT` would not be considered the correct context. 
+      - For the context, if the primary downstream context is `DT`, then `RT` would be considered the correct context. However, `NT` would not be considered the correct context. 
       - This makes sense if the sequencing is from single clones and you don't want to consider ambiguous matches.
     - **Partial**: Partially overlapping matches (for the mutation and the context) are considered using the equation: **ADD EQUATION FROM PAPER ONCE COMPLETE**.  
        - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
       - For the context, if the primary downstream context is `DT`, then a query `NT` context would be split between primary (75%) and control (25%) patterns. 
-      - This makes sense if the sequence is derived from a population.   
+      - This makes sense if the sequence is derived from a population.
  
 
 ## Output
