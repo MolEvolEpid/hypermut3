@@ -5,7 +5,7 @@ Web version (also has more details about method): https://www.hiv.lanl.gov/conte
 **Reference for Hypermut 1.0:**
 Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.
 
-**Primary purpose:** Analysis and detection of APOBEC-induced hypermutation. 
+**Primary purpose:** Analysis and detection of APOBEC3F- and APOBEC3G-induced hypermutation. 
 See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for more details on hypermutation. 
 
 **General purpose:** To document the nature and context of nucleotide substitutions in a sequence population relative to a reference sequence.
