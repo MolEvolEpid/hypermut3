@@ -131,9 +131,9 @@ def slice_seq(sequence, start, context_len, context_type, keep_gaps):
             seq_sliced = list(re.sub("-", "", sequence[:start])[-context_len:])
     if context_type == "downstream":
         if keep_gaps:
-            seq_sliced = list(sequence[start + 1:][:context_len])
+            seq_sliced = list(sequence[start + 1 :][:context_len])
         else:
-            seq_sliced = list(re.sub("-", "", sequence[start + 1:])[:context_len])
+            seq_sliced = list(re.sub("-", "", sequence[start + 1 :])[:context_len])
     return seq_sliced
 
 
