@@ -78,9 +78,9 @@ The optional arguments include:
                       bases between query and context, partial)
 --keepgaps, -k        Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)
 --begin BEGIN, -b BEGIN
-                      Position at which to start searching for mutations (default: 0)
+                      Position at which to start searching for mutations (default: 0). Note that the context may fall outside of these positions.
 --finish FINISH, -f FINISH
-                      Position at which to end searching for mutations (default: end of sequence)
+                      Position at which to end searching for mutations (default: end of sequence). Note that the context may fall outside of these positions.
 ```
 
 ## Details
@@ -88,7 +88,7 @@ The optional arguments include:
 - Context:
   - As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
   - () **CANNOT** be used for grouping (i.e.,  G(GT|AA)), unlike Hypermut 2.0.
-  - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C and a vertical bar ("|") means "OR".
+  - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C) and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
   - The upstream and downstream context patterns must always match a fixed number of nucleotides.
     For example, A|(TC) is not allowed as a pattern because it could have length 1 or 2.
