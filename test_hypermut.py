@@ -1,4 +1,5 @@
 import pytest
+from io import StringIO
 
 from hypermut import *
 
@@ -42,20 +43,6 @@ def test_check_partial_enforce():
   assert check_partial_enforce('partial', 'D') is None
   with pytest.raises(ValueError): 
     check_partial_enforce('partial', 'A')
-
-
-# def test_get_potential_matches():
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('TGT', 0, None, re.compile('[-]*[G][-]*', re.IGNORECASE))] == [(1,2)]
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('TRT', 0, None, re.compile('[-]*[AGR][-]*', re.IGNORECASE))] == [(1,2)]
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('AGT', 0, None, re.compile('(?<=)[-]*([ACGTRYBDHVNWSKM])[-]*(?=[-]*[G][-]*[-]*[T][-]*)', re.IGNORECASE))] == [(0,1)]
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('AGGG', 0, None, re.compile('(?<=)[-]*([ACGTRYBDHVNWSKM])[-]*(?=[-]*[G][-]*[-]*[G][-]*)', re.IGNORECASE))] == [(0, 1), (1, 2)]
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('TGT', 0, 1, re.compile('[-]*[G][-]*', re.IGNORECASE))] == []
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('AGT', 0, 2, re.compile('(?<=)[-]*([ACGTRYBDHVNWSKM])[-]*(?=[-]*[G][-]*[-]*[T][-]*)', re.IGNORECASE))] == []
-#   assert [(m.start(0), m.end(0)) for m in get_potential_matches('AGGG', 0, 3, re.compile('(?<=)[-]*([ACGTRYBDHVNWSKM])[-]*(?=[-]*[G][-]*[-]*[G][-]*)', re.IGNORECASE))] == [(0, 1)]
-
-def test_compile_re():
-  assert compile_re('A', iupac_dict) == re.compile('[A]', re.IGNORECASE)
-  assert compile_re('R', iupac_dict) == re.compile('[AG]', re.IGNORECASE)
 
 def test_compute_context_prop():
   assert compute_context_prop('GCGT', 'ACGT', ['.'], 'D', iupac_dict) == 1
@@ -171,3 +158,43 @@ def test_check_positive():
   with pytest.raises(argparse.ArgumentTypeError): 
     check_positive('notint')
 
+def test_calc_pval_ratio():
+  assert calc_pval_ratio(69,4,52,1) == (0.28266930809303686,'3.01')
+  assert calc_pval_ratio(69,4,52,0) == (0.10176095091349326,'inf')
+  assert calc_pval_ratio(69,0,52,0) == (1.0,'undef')
+
+def test_read_seq():
+  assert read_seq(StringIO('>test\nACGT\n>test2\nAAAA')) == ('test', 'ACGT', '>test2\n')
+  assert read_seq(StringIO('>test\nAC\nGT\n>test2\nAAAA')) == ('test', 'ACGT', '>test2\n')
+  assert read_seq(StringIO('ACGR\n>test2\nAAAA'), '>test\n', iupac_dict) == ('test', 'ACGR', '>test2\n')
+  with pytest.raises(ValueError):
+    read_seq(StringIO('test\nACGTX\n>test2\nAAAA'))
+  with pytest.raises(ValueError):
+    read_seq(StringIO('>test\nACGTX\n>test2\nAAAA'))
+
+def test_parse_args():
+  parser = parse_args(['example.fasta', 'g', 'a', '.', 'RD', '--summaryfile', 'test.csv', '-p', 'test2.csv'], iupac_dict)
+  assert parser.fasta == 'example.fasta'
+  assert parser.mutationfrom == 'G'
+  assert parser.mutationto == 'A'
+  assert parser.upstreamcontext == '.'
+  assert parser.downstreamcontext == 'RD'
+  assert parser.positionsfile == 'test2.csv'
+  assert parser.summaryfile == 'test.csv'
+  assert parser.enforce == 'D'
+  assert parser.match == 'strict'
+  assert parser.keepgaps == False
+  assert parser.begin == 0
+  assert parser.finish == None
+
+def test_loop_through_sequences():
+  summary_out = StringIO()
+  positions_out = StringIO()
+  fa = open('example.fasta', 'r')
+  loop_through_sequences(fa, argparse.Namespace(fasta=fa, 
+                                                mutationfrom='G', mutationto='A', upstreamcontext='.', downstreamcontext='RD', 
+                                                positionsfile=positions_out, summaryfile=summary_out, enforce='D', match='strict', 
+                                                keepgaps=False, begin=0, finish=None), iupac_dict, summary_out, positions_out)
+  fa.close()
+  assert summary_out.getvalue()[0:30] == 'Seq2,0.0,71.0,0.0,54.0,undef,1'
+  assert summary_out.getvalue()[31:67] == 'Seq5,4.0,69.0,1.0,52.0,3.01,0.282669' 

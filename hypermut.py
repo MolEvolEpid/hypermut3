@@ -4,6 +4,7 @@
 # Finds matches and prints (1) summary to stdout, and (2) match locations to a file
 # Note main argument now has 8 fields.
    
+import sys
 import argparse
 import re
 from scipy.stats import fisher_exact
@@ -50,9 +51,6 @@ def check_input_patterns(mutfrom, mutto, primaryupstream, primarydownstream, iup
 def check_partial_enforce(match_type, enforce_type):
     if match_type == 'partial' and enforce_type != 'D': 
         raise ValueError("When match is partial, enforce must be D.") 
-    
-def compile_re(mutationfrom, iupac_dict):
-  return re.compile('['+''.join(iupac_dict[mutationfrom])+']',re.I) 
     
 def compute_context_prop(refseq, seq, context, enforce, iupac_dict):
     prop = 1
@@ -172,22 +170,48 @@ def check_positive(value):
         raise argparse.ArgumentTypeError("must be a positive integer")
     return ival
 
-iupac_dict = {"A": list("A"), "C": list("C"), "G": list("G"), "T": list("T"),
-                  "R": list("AG"), "Y": list("CT"), "S": list("GC"), "W": list("AT"), "K": list("GT"), "M": list("AC"),
-                  "B": list("CGT"), "D": list("AGT"), "H": list("ACT"), "V": list("ACG"), "N": list("ACGT"), "-": list("-")}
-
 # main starts here #
-if __name__ == '__main__':
+def calc_pval_ratio(primarysites, primaries, controlsites, controls):
+    odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
+    try:
+        ratio = "%0.2f" %(primaries*controlsites/(1.0*primarysites*controls))
+    except:
+        if primaries*controlsites > 0:
+            ratio="inf" 
+        else:
+            ratio="undef"
+    return pval,ratio
+
+def read_seq(fa, line=None, iupac_dict=None):
+    if line is None:
+        line=fa.readline()
+        if line[0] != '>':
+            raise ValueError('Input alignment must be in FASTA format.')
+    name=line[1:].strip()
+    seq=""
+    line=fa.readline()
+    while line and line[0]!=">":
+        seq+=line
+        line=fa.readline()
+    seq=seq.replace("\n","").upper()
+    # check sequence
+    if iupac_dict is None: # reference sequence
+        check_chars(seq, list('ACGT-'), "The reference sequence must contain only the following characters: ACGT-.")
+    else: # query sequence
+        check_chars(seq, list(iupac_dict.keys()), 'Query sequences must contain only IUPAC characters or - (for gap).')
+    return name,seq,line
+
+def parse_args(args, iupac_dict):
     parser = argparse.ArgumentParser(prog='Hypermut 3.0', description='Identify mutations in a user-defined context')
     parser.add_argument('fasta', type=str,
                         help="Alignment file in fasta format")
-    parser.add_argument('mutationfrom', type=str, 
+    parser.add_argument('mutationfrom', type=str.upper, 
                         help="Base in the reference to consider as a site of interest for nucleotide substitution")
-    parser.add_argument('mutationto', type=str,
+    parser.add_argument('mutationto', type=str.upper,
                         help="Base in the query to consider a nucleotide substitution of interest")
-    parser.add_argument('upstreamcontext', type=str,
+    parser.add_argument('upstreamcontext', type=str.upper,
                         help="Upstream nucleotide context of interest")
-    parser.add_argument('downstreamcontext', type=str,
+    parser.add_argument('downstreamcontext', type=str.upper,
                         help="Downstream nucleotide context of interest")
     parser.add_argument('--positionsfile', '-p', type=str, 
                         help="Optional file path to output potential mutation sites and whether there was the correct mutation at those sites")
@@ -207,30 +231,40 @@ if __name__ == '__main__':
     # also check that this is positive
     parser.add_argument('--finish', '-f', type=check_positive, 
                         help="Position at which to end searching for mutations (default: end of sequence). Note that the context may fall outside of these positions.")
-    args=parser.parse_args()
+    args=parser.parse_args(args)
 
     # only allow partial matches when context is enforced on query sequence only
     check_partial_enforce(args.match, args.enforce)
+    # check input patterns
+    check_input_patterns(args.mutationfrom, args.mutationto, args.upstreamcontext, args.downstreamcontext, iupac_dict)
+    return args
+
+def loop_through_sequences(fa, args, iupac_dict, summaryfile, positionsfile):
+    # reference sequence
+    name, refseq, line = read_seq(fa)
+    seqs=0
+    while line:
+        seqs+=1
+        name, sequence, line = read_seq(fa, line, iupac_dict=iupac_dict)
+        primarysites, primaries, controlsites, controls = \
+            summarize_matches(refseq, sequence, args.begin, args.finish, 
+                              re.compile(args.mutationfrom),
+                              args.enforce, args.mutationto, 
+                              args.upstreamcontext.split('|'), args.downstreamcontext.split('|'), 
+                              iupac_dict, args.match, args.keepgaps, seqs, name, positionsfile)
+
+        pval, ratio = calc_pval_ratio(primarysites, primaries, controlsites, controls) 
     
-    # make sure all input bases are uppercase
-    mutationfrom=args.mutationfrom.upper() 
-    mutationto=args.mutationto.upper() 
-    upstreamcontext=args.upstreamcontext.upper() 
-    downstreamcontext=args.downstreamcontext.upper() 
+        if summaryfile is not None:
+            summaryfile.write(name+","+str(primaries)+","+str(primarysites)+","+str(controls) +","+str(controlsites) +","+ratio +",%.6g" %float(pval)+'\n')
+
+iupac_dict = {"A": list("A"), "C": list("C"), "G": list("G"), "T": list("T"),
+                  "R": list("AG"), "Y": list("CT"), "S": list("GC"), "W": list("AT"), "K": list("GT"), "M": list("AC"),
+                  "B": list("CGT"), "D": list("AGT"), "H": list("ACT"), "V": list("ACG"), "N": list("ACGT"), "-": list("-")}
+
+if __name__ == '__main__':
+    args = parse_args(sys.argv[1:], iupac_dict)
     
-    check_input_patterns(mutationfrom, mutationto, upstreamcontext, downstreamcontext, iupac_dict)
-
-    # convert different context options into a list
-    primaryupstream_orig = upstreamcontext.split('|')
-    primarydownstream_orig = downstreamcontext.split('|')
-
-    # prep pattern for allowing gaps and multistate characters in the regular expression
-    # primaryfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
-    primaryfromre = compile_re(mutationfrom, iupac_dict)
-
-    # open fasta file for reading
-    fa = open(args.fasta, 'r')
-
     # prep for writing summary file
     sf = None
     if args.summaryfile is not None:
@@ -240,52 +274,12 @@ if __name__ == '__main__':
     pf = None
     if args.positionsfile is not None:
         pf = open(args.positionsfile, 'w')
-        pf.write("#regexps="+'from '+mutationfrom+',to '+mutationto+',up '+upstreamcontext+',down '+downstreamcontext+'\n')
+        pf.write("#regexps="+'from '+args.mutationfrom+',to '+args.mutationto+',up '+args.upstreamcontext+',down '+args.downstreamcontext+'\n')
         pf.write("seq_num,seq_name,potential_mut_site,control,prop_control,mut_match\n")    
 
-    # start reading in fasta file
-    line=fa.readline()
-    if line[0] != '>':
-        raise ValueError('Input alignment must be in FASTA format.')
-    refname=line[1:].strip()
-    refseq=""
-    line=fa.readline()
-    while line and line[0]!=">":
-        refseq+=line
-        line=fa.readline()
-    refseq=refseq.replace("\n","").upper()
-    # check reference sequence
-    check_chars(refseq, list('ACGT-'), "The reference sequence must contain only the following characters: ACGT-.")
-
-    seqs=0
-    while line:
-        name=line[1:].strip()
-        sequence=""
-        line=fa.readline()
-        while line and line[0]!=">":
-            sequence=sequence+line
-            line=fa.readline()
-        sequence=sequence.replace("\n","").upper()
-        check_chars(sequence, list(iupac_dict.keys())+['-'], 'Query sequences must contain only IUPAC characters or - (for gap).')
-
-        seqs+=1
-        primarysites, primaries, controlsites, controls = \
-            summarize_matches(refseq, sequence, args.begin, args.finish, 
-                              primaryfromre, args.enforce,
-                              mutationto, primaryupstream_orig, primarydownstream_orig, 
-                              iupac_dict, args.match, args.keepgaps, seqs, name, pf)
-
-        odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
-        try:
-            ratio = "%0.2f" %(primaries*controlsites/(1.0*primarysites*controls))
-        except:
-            if primaries*controlsites > 0:
-                ratio="inf" 
-            else:
-                ratio="undef" 
-    
-        if args.summaryfile is not None:
-            sf.write(name+","+str(primaries)+","+str(primarysites)+","+str(controls) +","+str(controlsites) +","+ratio +",%.6g" %float(pval)+'\n')
+    # open fasta file for reading
+    fa = open(args.fasta, 'r')
+    loop_through_sequences(fa, args, iupac_dict, sf, pf)
 
     if args.summaryfile is not None:
         sf.close()
