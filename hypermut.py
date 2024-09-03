@@ -47,6 +47,13 @@ def check_input_patterns(mutfrom, mutto, primaryupstream, primarydownstream, iup
     if len(contexts_primary) != len(set(contexts_primary)):
         raise ValueError("Context is redundant. Please provide non-redundant patterns.")
 
+def check_partial_enforce(match_type, enforce_type):
+    if match_type == 'partial' and enforce_type != 'D': 
+        raise ValueError("When match is partial, enforce must be D.") 
+    
+def compile_re(mutationfrom, iupac_dict):
+  return re.compile('['+''.join(iupac_dict[mutationfrom])+']',re.I) 
+    
 def compute_context_prop(refseq, seq, context, enforce, iupac_dict):
     prop = 1
     if context[0] != '.':
@@ -122,7 +129,9 @@ def find_match_weight(refseq, sequence, start, end,
       if keep_gaps:
         if '-' in upstream_ref+upstream_seq+downstream_ref+downstream_seq:
             site_primary = matchval_primary = site_control = matchval_control = 0
-      if match == "strict" and (int(site_primary) != site_primary or int(matchval_primary) != matchval_primary): # ignore if multistate strict mode and not complete overlap
+      if match == "strict" and \
+        (int(site_primary) != site_primary or int(matchval_primary) != matchval_primary or \
+         int(site_control) != site_control or int(matchval_control) != matchval_control): # ignore if multistate strict mode and not complete overlap
         site_primary = matchval_primary = site_control = matchval_control = 0
     return site_primary,matchval_primary,site_control,matchval_control
 
@@ -146,9 +155,9 @@ def summarize_matches(refseq, queryseq, start, finish,
         matches_control+=matchval_control
         if(positionsfile is not None):
             if site_primary != 0:
-                positionsfile.write(str(seqs) + "," + name + ",0," + str(mymatch.start()+1) + "," + str(matchval_primary)+'\n')
+                positionsfile.write(str(seqs) + "," + name + "," + str(mymatch.start()+1) + ",0," + str(site_primary) + "," + str(matchval_primary)+'\n')
             if site_control != 0:
-                positionsfile.write(str(seqs) + "," + name + ",1," + str(mymatch.start()+1) + "," + str(matchval_control)+'\n')
+                positionsfile.write(str(seqs) + "," + name + "," + str(mymatch.start()+1) + ",1," + str(site_control) + "," + str(matchval_control)+'\n')
     return sites_primary,matches_primary,sites_control,matches_control
 
 def calc_fisher(primarysites, primaries, controlsites, controls):
@@ -161,7 +170,7 @@ def check_positive(value):
         raise argparse.ArgumentTypeError("must be a positive integer")
     if ival != float(value) or ival < 0:
         raise argparse.ArgumentTypeError("must be a positive integer")
-    return(ival)
+    return ival
 
 iupac_dict = {"A": list("A"), "C": list("C"), "G": list("G"), "T": list("T"),
                   "R": list("AG"), "Y": list("CT"), "S": list("GC"), "W": list("AT"), "K": list("GT"), "M": list("AC"),
@@ -194,15 +203,14 @@ if __name__ == '__main__':
                         help="Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)")
     # also check that this is positive
     parser.add_argument('--begin', '-b', type=check_positive, default=0,
-                        help="Position at which to start searching for mutations (default: 0)")
+                        help="Position at which to start searching for mutations (default: 0). Note that the context may fall outside of these positions.")
     # also check that this is positive
     parser.add_argument('--finish', '-f', type=check_positive, 
-                        help="Position at which to end searching for mutations (default: end of sequence)")
+                        help="Position at which to end searching for mutations (default: end of sequence). Note that the context may fall outside of these positions.")
     args=parser.parse_args()
 
     # only allow partial matches when context is enforced on query sequence only
-    if args.match == 'partial' and args.enforce != 'D':
-        raise ValueError("When match is partial, enforce must be D.")
+    check_partial_enforce(args.match, args.enforce)
     
     # make sure all input bases are uppercase
     mutationfrom=args.mutationfrom.upper() 
@@ -218,7 +226,7 @@ if __name__ == '__main__':
 
     # prep pattern for allowing gaps and multistate characters in the regular expression
     # primaryfrom will only match ACGT regardless because no multistate characters are allowed in the reference sequence
-    primaryfromre = re.compile('['+''.join(iupac_dict[mutationfrom])+']',re.I)
+    primaryfromre = compile_re(mutationfrom, iupac_dict)
 
     # open fasta file for reading
     fa = open(args.fasta, 'r')
@@ -233,7 +241,7 @@ if __name__ == '__main__':
     if args.positionsfile is not None:
         pf = open(args.positionsfile, 'w')
         pf.write("#regexps="+'from '+mutationfrom+',to '+mutationto+',up '+upstreamcontext+',down '+downstreamcontext+'\n')
-        pf.write("seq_num,seq_name,control,potential_mut_site,mut_match\n")    
+        pf.write("seq_num,seq_name,potential_mut_site,control,prop_control,mut_match\n")    
 
     # start reading in fasta file
     line=fa.readline()
@@ -279,7 +287,7 @@ if __name__ == '__main__':
         if args.summaryfile is not None:
             sf.write(name+","+str(primaries)+","+str(primarysites)+","+str(controls) +","+str(controlsites) +","+ratio +",%.6g" %float(pval)+'\n')
 
-    # if args.summaryfile is not None:
-    #     sf.close()
-    # if args.positionsfile is not None:
-    #     pf.close()
+    if args.summaryfile is not None:
+        sf.close()
+    if args.positionsfile is not None:
+        pf.close()
