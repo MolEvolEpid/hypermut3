@@ -3,7 +3,8 @@
 Web version (also has more details about method): https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermut.html
 
 **Reference for Hypermut 1.0:**
-Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.
+Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.\
+https://academic.oup.com/bioinformatics/article/16/4/400/187265
 
 **Primary purpose:** Analysis and detection of APOBEC3F- and APOBEC3G-induced hypermutation. 
 See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for more details on hypermutation. 
@@ -90,7 +91,7 @@ The optional arguments include:
   - () **CANNOT** be used for grouping (i.e.,  G(GT|AA)), unlike Hypermut 2.0.
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C) and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
-  - The upstream and downstream context patterns must always match a fixed number of nucleotides.
+  - The upstream context patterns must always match a fixed number of nucleotides.
     For example, A|(TC) is not allowed as a pattern because it could have length 1 or 2.
 - Reference sequence:
   - The first sequence in the fasta file.
@@ -132,8 +133,9 @@ There are two outputs:
     - Sequence number
     - Sequence name
     - Whether the site matches the control pattern/context (1) or primary pattern/context (0)
+    - Proportion of the site that matches the control or primary pattern/context
     - Potential mutation site
-    - Whether the expected mutation was present (1) or not (0)
+    - Whether the expected mutation was present or not
 
 
 ## Tests
