@@ -95,7 +95,7 @@ The optional arguments include:
 
 - Context:
   - As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
-  - () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA), unlike Hypermut 2.0.
+  - Unlike Hypermut 2.0, () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA).
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C) and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
   - The upstream context patterns must always match a fixed number of nucleotides.
@@ -104,7 +104,10 @@ The optional arguments include:
   - The first sequence in the fasta file.
   - Can only contain non-multistate characters (ACGT) and gaps (`-`).
   - For an intrapatient set, the reference could be the consensus of all the sequences, assuming that the majority are not hypermutated.
+    - For more details about consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
   - For a set of unrelated sequences, the reference should probably be the consensus sequence for the appropriate subtype.
+    - For pre-made subtype consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
+  
 - Query sequence(s):
   - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
   - Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
