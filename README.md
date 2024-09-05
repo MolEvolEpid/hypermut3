@@ -69,19 +69,26 @@ The optional arguments include:
 ```
 -h, --help            show this help message and exit
 --positionsfile POSITIONSFILE, -p POSITIONSFILE
-                      Optional file path to output potential mutation sites and whether there was the correct mutation at those sites
+                      Optional file path to output potential mutation sites and
+                      whether there was the correct mutation at those sites
 --summaryfile SUMMARYFILE, -s SUMMARYFILE
-                      Optional file path to output a summary of mutation counts and potential sites for primary and control contexts
+                      Optional file path to output a summary of mutation counts and
+                      potential sites for primary and control contexts
 --enforce {A,D,B}, -e {A,D,B}
-                      What sequence to enforce the context on: ancestor/reference (A), descendant/query (D, default), or both (B)
+                      What sequence to enforce the context on:
+                      ancestor/reference (A), descendant/query (D, default), or both (B)
 --match {strict,partial}, -m {strict,partial}
-                      Whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping
+                      Whether to include only complete matches (strict, default),
+                      or also include partial matches (not completely overlapping
                       bases between query and context, partial)
---keepgaps, -k        Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)
+--keepgaps, -k        Flag indicating to keep gaps in the alignment when i
+                      dentifying pattern matches (default without flag is to remove gaps)
 --begin BEGIN, -b BEGIN
-                      Position at which to start searching for mutations (default: 0). Note that the context may fall outside of these positions.
+                      Position at which to start searching for mutations (default: 0).
+                      Note that the context may fall outside of these positions.
 --finish FINISH, -f FINISH
-                      Position at which to end searching for mutations (default: end of sequence). Note that the context may fall outside of these positions.
+                      Position at which to end searching for mutations (default: end of sequence).
+                      Note that the context may fall outside of these positions.
 ```
 
 ## Details
