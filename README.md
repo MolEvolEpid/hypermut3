@@ -147,6 +147,36 @@ There are two outputs:
     - Potential mutation site
     - Whether the expected mutation was present or not
 
+## Example code for cumulative plot
+
+Sometimes it is useful to look at the plot of cumulative number of potential match sites vs. cumulative number of actual matches. Here is R code that you can use to create this plot:
+
+```
+# load library
+library(tidyverse)
+
+# read in positions file
+positions <- read_csv('example_verbose_output.csv', comment = '#')
+
+# cumulative plot (for primary)
+positions %>% 
+  filter(control == 0) %>% 
+  arrange(potential_mut_site) %>% 
+  group_by(seq_name) %>% 
+  mutate(cum_potential = cumsum(prop_control),
+         cum_match = cumsum(mut_match)) %>% 
+  ggplot(aes(x = cum_potential, y = cum_match, col = seq_name)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = 'Cumulative number of potential sites', y = 'Cumulative number of matches', col = '')
+```
+
+**UPDATE THIS ONCE WE HAVE THE REAL EXAMPLE DATA**
+
+The plot should look something like this:
+
+![image](https://github.com/user-attachments/assets/c6ff33a5-dd67-466c-acda-eb42e9db93c0)
+
 
 ## Tests
 
