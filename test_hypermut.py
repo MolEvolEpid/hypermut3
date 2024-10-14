@@ -397,25 +397,25 @@ def test_read_seq():
 def test_parse_args():
     parser = parse_args(
         [
-            "example.fasta",
+            "example/example.fasta",
             "g",
             "a",
             ".",
             "RD",
             "--summaryfile",
-            "test.csv",
+            "example/example-strict-summary.csv",
             "-p",
-            "test2.csv",
+            "example/example-strict-positions.csv",
         ],
         iupac_dict,
     )
-    assert parser.fasta == "example.fasta"
+    assert parser.fasta == "example/example.fasta"
     assert parser.mutationfrom == "G"
     assert parser.mutationto == "A"
     assert parser.upstreamcontext == "."
     assert parser.downstreamcontext == "RD"
-    assert parser.positionsfile == "test2.csv"
-    assert parser.summaryfile == "test.csv"
+    assert parser.positionsfile == "example/example-strict-positions.csv"
+    assert parser.summaryfile == "example/example-strict-summary.csv"
     assert parser.enforce == "D"
     assert parser.match == "strict"
     assert parser.keepgaps is False
@@ -426,7 +426,7 @@ def test_parse_args():
 def test_loop_through_sequences():
     summary_out = StringIO()
     positions_out = StringIO()
-    fa = open("example.fasta", "r")
+    fa = open("example/example.fasta", "r")
     loop_through_sequences(
         fa,
         argparse.Namespace(
@@ -448,5 +448,4 @@ def test_loop_through_sequences():
         positions_out,
     )
     fa.close()
-    assert summary_out.getvalue()[0:30] == "Seq2,0.0,71.0,0.0,54.0,undef,1"
-    assert summary_out.getvalue()[31:67] == "Seq5,4.0,69.0,1.0,52.0,3.01,0.282669"
+    assert summary_out.getvalue()[0:74] == "B.US.2015.DONOR4PBMCgDNA-154.KY579981,53.0,148.0,0.0,103.0,inf,6.04313e-15"
