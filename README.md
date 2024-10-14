@@ -51,7 +51,7 @@ Please choose the reference sequence carefully (see details below).
 To search for hypermutation by APOBEC3G or APOBEC3F using the example fasta file, you can run the command:
 
 ```
-python hypermut.py example.fasta G A . RD -s example_summary_output.csv -p example_positions_output.txt
+python hypermut.py example/example.fasta G A . RD -s example_summary_output.csv -p example_positions_output.txt
 ```
 
 The positional inputs are as follows:
@@ -156,7 +156,7 @@ Sometimes it is useful to look at the plot of cumulative number of potential mat
 library(tidyverse)
 
 # read in positions file
-positions <- read_csv('example_verbose_output.csv', comment = '#')
+positions <- read_csv('example_positions_output.csv', comment = '#')
 
 # cumulative plot (for primary)
 positions %>% 
@@ -171,11 +171,9 @@ positions %>%
   labs(x = 'Cumulative number of potential sites', y = 'Cumulative number of matches', col = '')
 ```
 
-**UPDATE THIS ONCE WE HAVE THE REAL EXAMPLE DATA**
+Here is a comparison of the example data run in strict and partial modes using code similar to the above (see the `example` folder and corresponding `README` for more details on exactly how this was generated):
 
-The plot should look something like this:
-
-![image](https://github.com/user-attachments/assets/c6ff33a5-dd67-466c-acda-eb42e9db93c0)
+![image](example/example.pdf)
 
 
 ## Tests
