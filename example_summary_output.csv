@@ -1,5 +1,0 @@
-Sequence,Muts(Match Sites),Out of(Potential Mut Sites),Controls(Control Muts),Out of(Potential Controls),Rate Ratio(A/B)/(C/D),Fisher Exact P-value
-Seq2,0,71,0,54,undef,1
-Seq5,4,69,1,52,3.01,0.282669
-Seq7,26,71,1,54,19.77,5.35061e-07
-Seq14,48,71,9,54,4.06,8.26961e-09
