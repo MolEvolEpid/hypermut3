@@ -173,7 +173,7 @@ positions %>%
 
 Here is a comparison of the example data run in strict and partial modes using code similar to the above (see the `example` folder and corresponding `README` for more details on exactly how this was generated):
 
-![image](example/example.pdf)
+![example](example/example.png)
 
 
 ## Tests

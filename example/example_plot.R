@@ -25,4 +25,4 @@ cum_matches_plot <- bind_rows(positions_strict %>% mutate(type = 'Strict'),
   ) +
   labs(x = 'Cumulative number of potential sites', y = 'Cumulative number of matches', col = '')
 
-ggsave('example.pdf', cum_matches_plot, width = 7, height = 5)
+ggsave('example.png', cum_matches_plot, width = 7, height = 5)
