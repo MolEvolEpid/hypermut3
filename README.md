@@ -185,3 +185,10 @@ To run the unit tests for the functions used in `hypermut.py`, you need `pytest`
 ```
 pytest test_hypermut.py
 ```
+
+To also get the code coverage, run:
+```
+pytest test_hypermut.py --cov --cov-report=html
+```
+
+You can open 'htmlcov/index.html' to browse the code coverage. 
