@@ -69,26 +69,33 @@ The optional arguments include:
 ```
 -h, --help            show this help message and exit
 --positionsfile POSITIONSFILE, -p POSITIONSFILE
-                      Optional file path to output potential mutation sites and whether there was the correct mutation at those sites
+                      Optional file path to output potential mutation sites and
+                      whether there was the correct mutation at those sites
 --summaryfile SUMMARYFILE, -s SUMMARYFILE
-                      Optional file path to output a summary of mutation counts and potential sites for primary and control contexts
+                      Optional file path to output a summary of mutation counts and
+                      potential sites for primary and control contexts
 --enforce {A,D,B}, -e {A,D,B}
-                      What sequence to enforce the context on: ancestor/reference (A), descendant/query (D, default), or both (B)
+                      What sequence to enforce the context on:
+                      ancestor/reference (A), descendant/query (D, default), or both (B)
 --match {strict,partial}, -m {strict,partial}
-                      Whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping
+                      Whether to include only complete matches (strict, default),
+                      or also include partial matches (not completely overlapping
                       bases between query and context, partial)
---keepgaps, -k        Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)
+--keepgaps, -k        Flag indicating to keep gaps in the alignment when i
+                      dentifying pattern matches (default without flag is to remove gaps)
 --begin BEGIN, -b BEGIN
-                      Position at which to start searching for mutations (default: 0). Note that the context may fall outside of these positions.
+                      Position at which to start searching for mutations (default: 0).
+                      Note that the context may fall outside of these positions.
 --finish FINISH, -f FINISH
-                      Position at which to end searching for mutations (default: end of sequence). Note that the context may fall outside of these positions.
+                      Position at which to end searching for mutations (default: end of sequence).
+                      Note that the context may fall outside of these positions.
 ```
 
 ## Details
 
 - Context:
   - As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
-  - () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA), unlike Hypermut 2.0.
+  - Unlike Hypermut 2.0, () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA).
   - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C) and a vertical bar ("|") means "OR".
   - Contexts can be multiple characters, but mutations can only be one character. 
   - The upstream context patterns must always match a fixed number of nucleotides.
@@ -97,7 +104,10 @@ The optional arguments include:
   - The first sequence in the fasta file.
   - Can only contain non-multistate characters (ACGT) and gaps (`-`).
   - For an intrapatient set, the reference could be the consensus of all the sequences, assuming that the majority are not hypermutated.
+    - For more details about consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
   - For a set of unrelated sequences, the reference should probably be the consensus sequence for the appropriate subtype.
+    - For pre-made subtype consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
+  
 - Query sequence(s):
   - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
   - Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
@@ -136,6 +146,36 @@ There are two outputs:
     - Proportion of the site that matches the control or primary pattern/context
     - Potential mutation site
     - Whether the expected mutation was present or not
+
+## Example code for cumulative plot
+
+Sometimes it is useful to look at the plot of cumulative number of potential match sites vs. cumulative number of actual matches. Here is R code that you can use to create this plot:
+
+```
+# load library
+library(tidyverse)
+
+# read in positions file
+positions <- read_csv('example_verbose_output.csv', comment = '#')
+
+# cumulative plot (for primary)
+positions %>% 
+  filter(control == 0) %>% 
+  arrange(potential_mut_site) %>% 
+  group_by(seq_name) %>% 
+  mutate(cum_potential = cumsum(prop_control),
+         cum_match = cumsum(mut_match)) %>% 
+  ggplot(aes(x = cum_potential, y = cum_match, col = seq_name)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = 'Cumulative number of potential sites', y = 'Cumulative number of matches', col = '')
+```
+
+**UPDATE THIS ONCE WE HAVE THE REAL EXAMPLE DATA**
+
+The plot should look something like this:
+
+![image](https://github.com/user-attachments/assets/c6ff33a5-dd67-466c-acda-eb42e9db93c0)
 
 
 ## Tests
