@@ -175,7 +175,6 @@ Here is a comparison of the example data run in strict and partial modes using c
 
 ![example](example/example.png)
 
-
 ## Tests
 
 To run the unit tests for the functions used in `hypermut.py`, you need `pytest` (which is included in the conda environment). Then you can run the command:
