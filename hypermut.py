@@ -383,16 +383,25 @@ def parse_args(args, iupac_dict):
         help="Downstream nucleotide context of interest",
     )
     parser.add_argument(
-        "--positionsfile",
-        "-p",
-        type=str,
-        help="Optional file path to output potential mutation sites and whether there was the correct mutation at those sites",
-    )
-    parser.add_argument(
         "--summaryfile",
         "-s",
         type=str,
-        help="Optional file path to output a summary of mutation counts and potential sites for primary and control contexts",
+        default="summary.csv",
+        help="File path to csv including a summary of mutation counts and potential sites for primary and control contexts (default: summary.csv)",
+    )
+    parser.add_argument(
+        "--positionsfile",
+        "-p",
+        type=str,
+        default="positions.csv",
+        help="File path to csv including potential mutation sites and whether there was the correct mutation at those sites (default: positions.csv)",
+    )
+    parser.add_argument(
+        "--argsfile",
+        "-a",
+        type=str,
+        default="args.csv",
+        help="File path to csv describing inputs (default: args.csv)",
     )
     parser.add_argument(
         "--enforce",
@@ -513,36 +522,25 @@ iupac_dict = {
 if __name__ == "__main__":
     args = parse_args(sys.argv[1:], iupac_dict)
 
+    # write args file
+    af = open(args.argsfile, "w")
+    af.write('arg_name,arg_value\n')
+    for arg in vars(args):
+        af.write(str(arg) + "," + str(getattr(args, arg)) + "\n")
+    af.close()
+
     # prep for writing summary file
-    sf = None
-    if args.summaryfile is not None:
-        sf = open(args.summaryfile, "w")
-        sf.write(
-            "Sequence,Primary Matches,Out of (Potential Primary Sites),Control Matches,Out of (Potential Controls),Rate Ratio(A/B)/(C/D),Fisher Exact P-value\n"
-        )
+    sf = open(args.summaryfile, "w")
+    sf.write(
+        "seq_name,primary_matches,potential_primaries,control_matches,potential_controls,rate_ratio,fisher_p\n"
+    )
     # prep for writing positions file
-    pf = None
-    if args.positionsfile is not None:
-        pf = open(args.positionsfile, "w")
-        pf.write(
-            "#regexps="
-            + "from "
-            + args.mutationfrom
-            + ",to "
-            + args.mutationto
-            + ",up "
-            + args.upstreamcontext
-            + ",down "
-            + args.downstreamcontext
-            + "\n"
-        )
-        pf.write("seq_num,seq_name,potential_mut_site,control,prop_control,mut_match\n")
+    pf = open(args.positionsfile, "w")
+    pf.write("seq_num,seq_name,potential_mut_site,control,prop_control,mut_match\n")
 
     # open fasta file for reading
     fa = open(args.fasta, "r")
     loop_through_sequences(fa, args, iupac_dict, sf, pf)
 
-    if args.summaryfile is not None:
-        sf.close()
-    if args.positionsfile is not None:
-        pf.close()
+    sf.close()
+    pf.close()

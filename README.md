@@ -51,7 +51,7 @@ Please choose the reference sequence carefully (see details below).
 To search for hypermutation by APOBEC3G or APOBEC3F using the example fasta file, you can run the command:
 
 ```
-python hypermut.py example/example.fasta G A . RD -s example_summary_output.csv -p example_positions_output.txt
+python hypermut.py example/example.fasta G A . RD
 ```
 
 The positional inputs are as follows:
@@ -68,12 +68,14 @@ The optional arguments include:
 
 ```
 -h, --help            show this help message and exit
---positionsfile POSITIONSFILE, -p POSITIONSFILE
-                      Optional file path to output potential mutation sites and
-                      whether there was the correct mutation at those sites
 --summaryfile SUMMARYFILE, -s SUMMARYFILE
-                      Optional file path to output a summary of mutation counts and
-                      potential sites for primary and control contexts
+                      File path to csv including a summary of mutation counts and potential sites 
+                      for primary and control contexts (default: summary.csv)
+--positionsfile POSITIONSFILE, -p POSITIONSFILE
+                      File path to csv including potential mutation sites and whether there was 
+                      the correct mutation at those sites (default: positions.csv)
+--argsfile ARGSFILE, -a ARGSFILE
+                      File path to csv including input arguments (default: args.csv)
 --enforce {A,D,B}, -e {A,D,B}
                       What sequence to enforce the context on:
                       ancestor/reference (A), descendant/query (D, default), or both (B)
@@ -124,28 +126,41 @@ The optional arguments include:
 
 ## Output
 
-There are two outputs:
+There are three outputs:
 
-- Summary output:
+- Summary (default path: `summary.csv`):
   - 1 row for each sequence
   - Columns for:
-    - Sequence name
-    - Number of actual primary mutations 
-    - Number of potential primary mutations (correct context)
-    - Number of actual control mutations 
-    - Number of potential control mutations (correct context)
-    - Rate ratio of primary vs. control
-    - Fisher's exact p-value
-- Verbose output:
-  - Input pattern
-  - Regular expression pattern
+    - `seq_name`: Sequence name
+    - `primary_matches`: Number of actual primary mutations 
+    - `potential_primaries`: Number of potential primary mutations (correct context)
+    - `control_matches`: Number of actual control mutations 
+    - `potential_controls`: Number of potential control mutations (correct context)
+    - `rate_ratio`: Rate ratio of primary vs. control (primary_matches/potential_primaries)/(control_matches/potential_controls)
+    - `fisher_p`: Fisher's exact p-value
+- Positions (default path: `positions.csv`):
   - Row for each potential mutation site (with the correct context) including the columns:
-    - Sequence number
-    - Sequence name
-    - Whether the site matches the control pattern/context (1) or primary pattern/context (0)
-    - Proportion of the site that matches the control or primary pattern/context
-    - Potential mutation site
-    - Whether the expected mutation was present or not
+    - `seq_num`: Sequence number
+    - `seq_name`: Sequence name
+    - `potential_mut_site`: Potential mutation site
+    - `control`: Whether the site matches the control pattern/context (1) or primary pattern/context (0)
+    - `prop_control`: Proportion of the site that matches the control or primary pattern/context
+    - `mut_match`: Whether the expected mutation was present or not
+- Args (default path: `args.csv`):
+  - Row for each input argument to `hypermut.py` (with two columns: `arg_name` and `arg_value`):
+    - `fasta`: Input fasta file
+    - `mutationfrom`: Mutation from
+    - `mutationto`: Mutation to
+    - `upstreamcontext`: Upstream context
+    - `downstreamcontext`: Downstream context
+    - `summaryfile`: Summary file name
+    - `positionsfile`: Positions file name
+    - `argsfile`: Args file name
+    - `enforce`: What sequence to enforce the context on
+    - `match`: Match mode
+    - `begin`: Start position in the alignmnet
+    - `finish`: End position in the alignmnet
+
 
 ## Example code for cumulative plot
 
