@@ -104,7 +104,8 @@ The optional arguments include:
     For example, A|TC is not allowed as a pattern because it could have length 1 or 2.
 - Reference sequence:
   - The first sequence in the fasta file.
-  - Can only contain non-multistate characters (ACGT) and gaps (`-`).
+  - In strict matching mode (see below), can contain IUPAC characters and gaps (`-`). 
+  - In partial matching mode (see below), can only contain non-multistate characters (ACGT) and gaps (`-`).
   - For an intrapatient set, the reference could be the consensus of all the sequences, assuming that the majority are not hypermutated.
     - For more details about consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
   - For a set of unrelated sequences, the reference should probably be the consensus sequence for the appropriate subtype.

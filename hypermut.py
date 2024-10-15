@@ -103,7 +103,6 @@ def compute_context_prop(refseq, seq, context, enforce, iupac_dict):
                     ]
                 )
         elif enforce == "B":
-            # this is only allowed in the strict context, so it should ultimately be 0 or 1
             for u in context:
                 prop += prod(
                     [
@@ -242,9 +241,7 @@ def summarize_matches(
     name,
     positionsfile,
 ):
-    sites_primary = matches_primary = sites_control = matches_control = (
-        0  # sites= potentials also passing secondre
-    )
+    sites_primary = matches_primary = sites_control = matches_control = 0
     if finish is None:
         potentials = potentialre.finditer(refseq, start)
     else:
@@ -316,7 +313,6 @@ def check_positive(value):
     return ival
 
 
-# main starts here #
 def calc_pval_ratio(primarysites, primaries, controlsites, controls):
     odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
     try:
@@ -329,7 +325,7 @@ def calc_pval_ratio(primarysites, primaries, controlsites, controls):
     return pval, ratio
 
 
-def read_seq(fa, line=None, iupac_dict=None):
+def read_seq(fa, chars, error, line=None):
     if line is None:
         line = fa.readline()
         if line[0] != ">":
@@ -342,18 +338,11 @@ def read_seq(fa, line=None, iupac_dict=None):
         line = fa.readline()
     seq = seq.replace("\n", "").upper()
     # check sequence
-    if iupac_dict is None:  # reference sequence
-        check_chars(
-            seq,
-            list("ACGT-"),
-            "The reference sequence must contain only the following characters: ACGT-.",
-        )
-    else:  # query sequence
-        check_chars(
-            seq,
-            list(iupac_dict.keys()),
-            "Query sequences must contain only IUPAC characters or - (for gap).",
-        )
+    check_chars(
+        seq,
+        chars,
+        error
+    )
     return name, seq, line
 
 
@@ -457,11 +446,16 @@ def parse_args(args, iupac_dict):
 
 def loop_through_sequences(fa, args, iupac_dict, summaryfile, positionsfile):
     # reference sequence
-    name, refseq, line = read_seq(fa)
+    ref_chars = query_chars = list(iupac_dict.keys())
+    ref_error = query_error = "Sequences must contain only IUPAC characters or - (for gap)"
+    if args.match == 'partial':
+        ref_chars = list("ACGT-")
+        ref_error = "In partial match mode, the reference sequence must contain only the following characters: ACGT-"
+    name, refseq, line = read_seq(fa, ref_chars, ref_error)
     seqs = 0
     while line:
         seqs += 1
-        name, sequence, line = read_seq(fa, line, iupac_dict=iupac_dict)
+        name, sequence, line = read_seq(fa, query_chars, query_error, line)
         primarysites, primaries, controlsites, controls = summarize_matches(
             refseq,
             sequence,

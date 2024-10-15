@@ -373,25 +373,25 @@ def test_calc_pval_ratio():
 
 
 def test_read_seq():
-    assert read_seq(StringIO(">test\nACGT\n>test2\nAAAA")) == (
+    assert read_seq(StringIO(">test\nACGT\n>test2\nAAAA"), list('ACGT-'), 'error') == (
         "test",
         "ACGT",
         ">test2\n",
     )
-    assert read_seq(StringIO(">test\nAC\nGT\n>test2\nAAAA")) == (
+    assert read_seq(StringIO(">test\nAC\nGT\n>test2\nAAAA"), list('ACGT-'), 'error') == (
         "test",
         "ACGT",
         ">test2\n",
     )
-    assert read_seq(StringIO("ACGR\n>test2\nAAAA"), ">test\n", iupac_dict) == (
+    assert read_seq(StringIO("ACGR\n>test2\nAAAA"), list(iupac_dict.keys()), 'error', ">test\n") == (
         "test",
         "ACGR",
         ">test2\n",
     )
     with pytest.raises(ValueError):
-        read_seq(StringIO("test\nACGTX\n>test2\nAAAA"))
+        read_seq(StringIO("test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), 'error')
     with pytest.raises(ValueError):
-        read_seq(StringIO(">test\nACGTX\n>test2\nAAAA"))
+        read_seq(StringIO(">test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), 'error')
 
 
 def test_parse_args():
@@ -449,3 +449,25 @@ def test_loop_through_sequences():
     )
     fa.close()
     assert summary_out.getvalue()[0:74] == "B.US.2015.DONOR4PBMCgDNA-154.KY579981,53.0,148.0,0.0,103.0,inf,6.04313e-15"
+    with pytest.raises(ValueError):
+        loop_through_sequences(
+            StringIO(">test\nACGTX\n>test2\nAAAA"),
+            argparse.Namespace(
+                fasta=fa,
+                mutationfrom="G",
+                mutationto="A",
+                upstreamcontext=".",
+                downstreamcontext="RD",
+                positionsfile=positions_out,
+                summaryfile=summary_out,
+                enforce="D",
+                match="partial",
+                keepgaps=False,
+                begin=0,
+                finish=None,
+            ),
+            iupac_dict,
+            summary_out,
+            positions_out,
+        )
+    
