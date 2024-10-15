@@ -83,8 +83,8 @@ The optional arguments include:
                       Whether to include only complete matches (strict, default),
                       or also include partial matches (not completely overlapping
                       bases between query and context, partial)
---keepgaps, -k        Flag indicating to keep gaps in the alignment when i
-                      dentifying pattern matches (default without flag is to remove gaps)
+--keepgaps, -k        Flag indicating to keep gaps in the alignment when
+                      identifying pattern matches (default without flag is to remove gaps)
 --begin BEGIN, -b BEGIN
                       Position at which to start searching for mutations (default: 0).
                       Note that the context may fall outside of these positions.
@@ -113,13 +113,13 @@ The optional arguments include:
 - Query sequence(s):
   - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
   - Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
-  - If the query sequence contains multistate characters, they can be treated as follows: **ADD FIGURE FROM MANUSCRIPT ONCE COMPLETE**
+  - If the query sequence contains multistate characters, they can be treated as follows: 
     - **Strict** (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). 
-     - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
+      - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
       - For the context, if the primary downstream context is `DT`, then `RT` would be considered the correct context. However, `NT` would not be considered the correct context. 
       - This makes sense if the sequencing is from single clones and you don't want to consider ambiguous matches.
-    - **Partial**: Partially overlapping matches (for the mutation and the context) are considered using the equation: **ADD EQUATION FROM PAPER ONCE COMPLETE**.  
-       - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
+    - **Partial**: Partially overlapping matches (for the mutation and the context) are considered.  
+      - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
       - For the context, if the primary downstream context is `DT`, then a query `NT` context would be split between primary (75%) and control (25%) patterns. 
       - This makes sense if the sequence is derived from a population.
  
