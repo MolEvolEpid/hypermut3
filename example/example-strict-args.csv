@@ -1,12 +1,10 @@
 arg_name,arg_value
-fasta,example.fasta
+fasta,example/example.fasta
 mutationfrom,G
 mutationto,A
 upstreamcontext,.
 downstreamcontext,RD
-summaryfile,example-strict-summary.csv
-positionsfile,example-strict-positions.csv
-argsfile,example-strict-args.csv
+prefix,example/example-strict-
 enforce,D
 match,strict
 keepgaps,False

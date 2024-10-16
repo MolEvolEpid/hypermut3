@@ -4,9 +4,7 @@ mutationfrom,G
 mutationto,A
 upstreamcontext,.
 downstreamcontext,RD
-summaryfile,example-partial-summary.csv
-positionsfile,example-partial-positions.csv
-argsfile,example-partial-args.csv
+prefix,example-partial-
 enforce,D
 match,partial
 keepgaps,False

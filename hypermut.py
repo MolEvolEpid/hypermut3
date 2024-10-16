@@ -372,25 +372,11 @@ def parse_args(args, iupac_dict):
         help="Downstream nucleotide context of interest",
     )
     parser.add_argument(
-        "--summaryfile",
-        "-s",
-        type=str,
-        default="summary.csv",
-        help="File path to csv including a summary of mutation counts and potential sites for primary and control contexts (default: summary.csv)",
-    )
-    parser.add_argument(
-        "--positionsfile",
+        "--prefix",
         "-p",
         type=str,
-        default="positions.csv",
-        help="File path to csv including potential mutation sites and whether there was the correct mutation at those sites (default: positions.csv)",
-    )
-    parser.add_argument(
-        "--argsfile",
-        "-a",
-        type=str,
-        default="args.csv",
-        help="File path to csv describing inputs (default: args.csv)",
+        default="",
+        help="Prefix for output files (default: no prefix).",
     )
     parser.add_argument(
         "--enforce",
@@ -517,19 +503,19 @@ if __name__ == "__main__":
     args = parse_args(sys.argv[1:], iupac_dict)
 
     # write args file
-    af = open(args.argsfile, "w")
+    af = open(args.prefix + "args.csv", "w")
     af.write('arg_name,arg_value\n')
     for arg in vars(args):
         af.write(str(arg) + "," + str(getattr(args, arg)) + "\n")
     af.close()
 
     # prep for writing summary file
-    sf = open(args.summaryfile, "w")
+    sf = open(args.prefix + "summary.csv", "w")
     sf.write(
         "seq_name,primary_matches,potential_primaries,control_matches,potential_controls,rate_ratio,fisher_p\n"
     )
     # prep for writing positions file
-    pf = open(args.positionsfile, "w")
+    pf = open(args.prefix + "positions.csv", "w")
     pf.write("seq_num,seq_name,potential_mut_site,control,prop_context,mut_match\n")
 
     # open fasta file for reading
