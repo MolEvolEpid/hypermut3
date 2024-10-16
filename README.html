@@ -1,0 +1,80 @@
+<h1 id="hypermut-3">Hypermut 3</h1>
+<p><strong>Primary purpose:</strong> Analysis and detection of APOBEC3F- and APOBEC3G-induced hypermutation. 
+See <a href="https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html">here</a> for more details on hypermutation (the &quot;What is hypermutation&quot; section). </p>
+<p><strong>General purpose:</strong> To document the nature and context of nucleotide substitutions in a sequence population relative to a reference sequence.</p>
+<p><strong>Note:</strong> This page describes the inputs and outputs for the Hypermut webtool. A command line version of the tool can be downloaded from <a href="https://github.com/MolEvolEpid/hypermut/tree/main">GitHub</a>. </p>
+<h2 id="overview">Overview</h2>
+<p>Hypermut 3 allows searching for mutations fitting a pattern you specify. 
+The positions that match the upstream context pattern, followed by the specified mutation (relative to the reference sequence, 
+assumed to be the first entered, and treated as ancestral) followed by the downstream context will be found. 
+Matches to the opposite control pattern will be shown for comparison. 
+The context requirements can be enforced on the reference sequence, or on the query sequence (recommended, especially if the reference is distant) or both. 
+Fisher&#39;s exact test is then used to detect any increase of mutation for the specified context compared to the control context.</p>
+<h2 id="inputs">Inputs</h2>
+<p>To run the program successfully:</p>
+<ol>
+<li>Select the <a href="https://www.hiv.lanl.gov/content/sequence/HelpDocs/SEQsamples.html">alignment format</a> you are using to present your sequences. </li>
+<li>Input your sequence alignment file. <strong>The program designates the first sequence in the file as the reference sequence and considers all other sequences as queries to compare to the reference.</strong> Please choose the reference sequence carefully (see details below). </li>
+<li>Choose whether to view the complete sequence (leave boxes blank) or a subregion. If you choose to view a subregion, enter the range of the desired subregion in the boxes.</li>
+<li>Define the to and from mutations, and the upstream and downstream nucelotide contexts (see below for details). For typical analyses of APOBEC3G- and APOBEC3F-induced hypermutation, these options should be left in their default settings. For more detailed analysis, you can edit the mutation pattern in the provided boxes to search for any desired pattern. Please see the <a href="https://www.hiv.lanl.gov/content/sequence/HYPERMUT/background.html">Hypermut 2.0</a> description for more information about specific context patterns and what they mean.</li>
+<li>Decide whether to enforce the context on the reference sequence, query sequence, or both (default: query, recommended). </li>
+<li>Decide whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping bases between query and context, partial). Strict matching should be used for sequences that come from single genomes or clones, partial matching should be used for population sequences (see below for details). </li>
+<li>Decide whether to skip (default, recommended) or keep gaps in the alignment when identifying pattern matches. </li>
+</ol>
+<h3 id="input-details">Input details</h3>
+<p><strong>Mutations:</strong></p>
+<ul>
+<li>The mutations to and from must only be one nucleotide. </li>
+</ul>
+<p><strong>Context:</strong></p>
+<ul>
+<li>As in regular expressions, the symbol &quot;|&quot; means &quot;OR&quot;. Thus GGT|GAA matches GGT or GAA.</li>
+<li>Unlike Hypermut 2.0, () <strong>CANNOT</strong> be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA).</li>
+<li>All of the <a href="https://www.hiv.lanl.gov/content/sequence/HelpDocs/IUPAC.html">IUPAC codes</a> are supported 
+(e.g., R means G or A, while D means not C).</li>
+<li>Contexts can be multiple characters, but mutations can only be one character. </li>
+<li>The upstream and downstream context patterns must always match a fixed number of nucleotides.
+For example, A|TC is not allowed as a pattern because it could have length 1 or 2.</li>
+</ul>
+<p><strong>Reference sequence:</strong></p>
+<ul>
+<li>The first sequence in the fasta file.</li>
+<li>In strict matching mode (see below), can contain IUPAC characters and gaps (<code>-</code>). </li>
+<li>In partial matching mode (see below), can only contain non-multistate characters (ACGT) and gaps (<code>-</code>).</li>
+<li>For an intrapatient set, the reference could be the strict/majority consensus of all the sequences, assuming that the majority are not hypermutated.<ul>
+<li>For more details about strict/majority consensus making, and a webtool, see <a href="https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html">here</a>.</li>
+</ul>
+</li>
+<li>For a set of unrelated sequences, the reference should probably be the strict/majority consensus sequence for the appropriate subtype.<ul>
+<li>For pre-made subtype strict/majority consensus sequences for HIV, see <a href="https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html">here</a>.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Query sequence(s):</strong></p>
+<ul>
+<li>Can contain <a href="https://www.bioinformatics.org/sms/iupac.html">IUPAC nucleotide codes</a> (T, not U) and gaps (<code>-</code>).</li>
+<li>Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.</li>
+<li>If the query sequence contains multistate characters, they can be treated as follows: <ul>
+<li><strong>Strict</strong> (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). <ul>
+<li>For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is <code>A</code> and the query mutation is <code>R</code>. </li>
+<li>For the context, if the primary downstream context is <code>DT</code>, then <code>RT</code> would be considered the correct context. However, <code>NT</code> would not be considered the correct context. </li>
+<li>This makes sense if the sequencing is from single clones and you don&#39;t want to consider ambiguous matches.</li>
+</ul>
+</li>
+<li><strong>Partial</strong>: Partially overlapping matches (for the mutation and the context) are considered.  <ul>
+<li>For a mutation site, if the primary mutation is <code>A</code> and the query mutation is <code>R</code>, then this would be considered a 50% match. </li>
+<li>For the context, if the primary downstream context is <code>DT</code>, then a query <code>NT</code> context would be split between primary (75%) and control (25%) patterns. </li>
+<li>This makes sense if the sequence is derived from a population.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="outputs">Outputs</h2>
+<p>Hypermut 3 outputs: </p>
+<ol>
+<li>A list of input arguments defined.</li>
+<li>A summary of the sequences and their statistics. The Fisher Exact P-value may be a useful way to determine if a specific sequence is a hypermutant. </li>
+<li>A graphical output allows you to view the cumulative number of contexts and mutations across the sequences.</li>
+</ol>
+<p>The underlying data corresponding to each of these outputs can be downloaded. For more details about the downloaded files, please refer to the Output section of the Hypermut 3 <a href="https://github.com/MolEvolEpid/hypermut/tree/main">GitHub</a> page. </p>
