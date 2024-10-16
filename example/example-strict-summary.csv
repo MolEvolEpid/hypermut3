@@ -1,5 +1,6 @@
-Sequence,Primary Matches,Out of (Potential Primary Sites),Control Matches,Out of (Potential Controls),Rate Ratio(A/B)/(C/D),Fisher Exact P-value
-B.US.2015.DONOR4PBMCgDNA-154.KY579981,53.0,148.0,0.0,103.0,inf,6.04313e-15
-B.US.2015.DONOR4PBMCgDNA-156.KY579982,15.0,146.0,0.0,105.0,inf,0.000214905
-B.US.2015.DONOR4PBMCgDNA-157.KY579983,1.0,148.0,0.0,103.0,inf,0.589641
-resolved_consensus,0.0,91.0,0.0,102.0,undef,1
+seq_name,primary_matches,potential_primaries,control_matches,potential_controls,rate_ratio,fisher_p
+Seq2,0.0,71.0,0.0,54.0,undef,1
+Seq5,4.0,69.0,1.0,52.0,3.01,0.282669
+Seq7,26.0,71.0,1.0,54.0,19.77,5.35061e-07
+Seq14,48.0,71.0,9.0,54.0,4.06,8.26961e-09
+resolved_consensus,0.0,12.0,0.0,43.0,undef,1

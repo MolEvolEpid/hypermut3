@@ -1,7 +1,5 @@
 ## Example data, output, and plot
 
-This example data comes from sequences from [Patient ID 99722](https://www.hiv.lanl.gov/components/sequence/HIV/search/patient.comp?pat_id=99722&id=1aa26c820e35983d15a94341b42d1a40) from the LANL HIV database.
-
 To run the example data through hypermut, navigate to this directory and run the command:
 
 ```

@@ -2,8 +2,8 @@
 library(tidyverse)
 
 # read in positions file
-positions_strict <- read_csv('example-strict-positions.csv', comment = '#')
-positions_partial <- read_csv('example-partial-positions.csv', comment = '#')
+positions_strict <- read_csv('example-strict-positions.csv')
+positions_partial <- read_csv('example-partial-positions.csv')
 
 # cumulative plot (for primary)
 cum_matches_plot <- bind_rows(positions_strict %>% mutate(type = 'Strict'),
@@ -16,8 +16,8 @@ cum_matches_plot <- bind_rows(positions_strict %>% mutate(type = 'Strict'),
          type = factor(type, levels = c('Strict', 'Partial'))) %>%
   ggplot(aes(x = cum_potential, y = cum_match, col = seq_name)) +
   facet_grid(~type) +
-  geom_line() +
-  guides(color=guide_legend(ncol=2)) +
+  geom_line(alpha = 0.5) +
+  guides(color=guide_legend(ncol=3)) +
   theme_classic() +
   theme(strip.background = element_blank(),
         strip.text = element_text(face = 'bold'),
