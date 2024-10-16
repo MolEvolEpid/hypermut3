@@ -195,3 +195,7 @@ pytest test_hypermut.py --cov --cov-report=html
 ```
 
 You can open 'htmlcov/index.html' to browse the code coverage. 
+
+## Manuscript code and data
+
+Manuscript code and data can be found in the `manuscript` directory. 
