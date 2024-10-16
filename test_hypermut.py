@@ -373,25 +373,33 @@ def test_calc_pval_ratio():
 
 
 def test_read_seq():
-    assert read_seq(StringIO(">test\nACGT\n>test2\nAAAA"), list('ACGT-'), 'error') == (
+    assert read_seq(StringIO(">test\nACGT\n>test2\nAAAA"), list("ACGT-"), "error") == (
         "test",
         "ACGT",
         ">test2\n",
     )
-    assert read_seq(StringIO(">test\nAC\nGT\n>test2\nAAAA"), list('ACGT-'), 'error') == (
+    assert read_seq(
+        StringIO(">test\nAC\nGT\n>test2\nAAAA"), list("ACGT-"), "error"
+    ) == (
         "test",
         "ACGT",
         ">test2\n",
     )
-    assert read_seq(StringIO("ACGR\n>test2\nAAAA"), list(iupac_dict.keys()), 'error', ">test\n") == (
+    assert read_seq(
+        StringIO("ACGR\n>test2\nAAAA"), list(iupac_dict.keys()), "error", ">test\n"
+    ) == (
         "test",
         "ACGR",
         ">test2\n",
     )
     with pytest.raises(ValueError):
-        read_seq(StringIO("test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), 'error')
+        read_seq(
+            StringIO("test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), "error"
+        )
     with pytest.raises(ValueError):
-        read_seq(StringIO(">test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), 'error')
+        read_seq(
+            StringIO(">test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), "error"
+        )
 
 
 def test_parse_args():
@@ -470,4 +478,3 @@ def test_loop_through_sequences():
             summary_out,
             positions_out,
         )
-    

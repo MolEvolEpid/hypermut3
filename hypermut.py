@@ -335,11 +335,7 @@ def read_seq(fa, chars, error, line=None):
         line = fa.readline()
     seq = seq.replace("\n", "").upper()
     # check sequence
-    check_chars(
-        seq,
-        chars,
-        error
-    )
+    check_chars(seq, chars, error)
     return name, seq, line
 
 
@@ -432,8 +428,10 @@ def parse_args(args, iupac_dict):
 def loop_through_sequences(fa, args, iupac_dict, summaryfile, positionsfile):
     # reference sequence
     ref_chars = query_chars = list(iupac_dict.keys())
-    ref_error = query_error = "Sequences must contain only IUPAC characters or - (for gap)"
-    if args.match == 'partial':
+    ref_error = query_error = (
+        "Sequences must contain only IUPAC characters or - (for gap)"
+    )
+    if args.match == "partial":
         ref_chars = list("ACGT-")
         ref_error = "In partial match mode, the reference sequence must contain only the following characters: ACGT-"
     name, refseq, line = read_seq(fa, ref_chars, ref_error)
@@ -503,7 +501,7 @@ if __name__ == "__main__":
 
     # write args file
     af = open(args.prefix + "args.csv", "w")
-    af.write('arg_name,arg_value\n')
+    af.write("arg_name,arg_value\n")
     for arg in vars(args):
         af.write(str(arg) + "," + str(getattr(args, arg)) + "\n")
     af.close()
