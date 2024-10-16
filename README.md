@@ -68,13 +68,8 @@ The optional arguments include:
 
 ```
 -h, --help            show this help message and exit
---summaryfile SUMMARYFILE, -s SUMMARYFILE
-                      File path to csv including a summary of mutation counts and potential sites 
-                      for primary and control contexts (default: summary.csv)
 --prefix PREFIX, -p PREFIX
                       Prefix for output files (default: no prefix).
---argsfile ARGSFILE, -a ARGSFILE
-                      File path to csv including input arguments (default: args.csv)
 --enforce {A,D,B}, -e {A,D,B}
                       What sequence to enforce the context on:
                       ancestor/reference (A), descendant/query (D, default), or both (B)
