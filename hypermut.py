@@ -398,7 +398,7 @@ def parse_args(args, iupac_dict):
         "--keepgaps",
         "-k",
         action="store_true",
-        help="Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to remove gaps)",
+        help="Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to skip gaps)",
     )
     # also check that this is positive
     parser.add_argument(
