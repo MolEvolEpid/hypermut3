@@ -1,10 +1,10 @@
 arg_name,arg_value
-fasta,example/example.fasta
+fasta,example.fasta
 mutationfrom,G
 mutationto,A
 upstreamcontext,.
 downstreamcontext,RD
-prefix,example/example-strict-
+prefix,example-strict-
 enforce,D
 match,strict
 keepgaps,False
