@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 
-# Finds matches and prints (1) summary to stdout, and (2) match locations to a file
-# Note main argument now has 8 fields.
-
 import argparse
 import re
 import sys
@@ -30,7 +27,7 @@ def check_chars(chars, good_chars, error_message):
 def check_input_patterns(
     mutfrom, mutto, primaryupstream, primarydownstream, iupac_dict
 ):
-    # check that all patterns consist of IUPAC characters
+    # check that all patterns consist of IUPAC characters only
     check_chars(
         primaryupstream,
         list(iupac_dict.keys()) + ["|"],
@@ -404,7 +401,6 @@ def parse_args(args, iupac_dict):
         action="store_true",
         help="Flag indicating to keep gaps in the alignment when identifying pattern matches (default without flag is to skip gaps)",
     )
-    # also check that this is positive
     parser.add_argument(
         "--begin",
         "-b",
@@ -412,7 +408,6 @@ def parse_args(args, iupac_dict):
         default=0,
         help="Position at which to start searching for mutations (default: 0). Note that the context may fall outside of these positions.",
     )
-    # also check that this is positive
     parser.add_argument(
         "--finish",
         "-f",
