@@ -274,7 +274,7 @@ def summarize_matches(
                     + name
                     + ","
                     + str(mymatch.start() + 1)
-                    + ",0,"
+                    + ",primary,"
                     + str(site_primary)
                     + ","
                     + str(matchval_primary)
@@ -287,7 +287,7 @@ def summarize_matches(
                     + name
                     + ","
                     + str(mymatch.start() + 1)
-                    + ",1,"
+                    + ",control,"
                     + str(site_control)
                     + ","
                     + str(matchval_control)
@@ -516,7 +516,7 @@ if __name__ == "__main__":
     )
     # prep for writing positions file
     pf = open(args.prefix + "positions.csv", "w")
-    pf.write("seq_num,seq_name,potential_mut_site,control,prop_context,mut_match\n")
+    pf.write("seq_num,seq_name,potential_mut_site,context,prop_context,mut_match\n")
 
     # open fasta file for reading
     fa = open(args.fasta, "r")
