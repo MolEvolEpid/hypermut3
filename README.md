@@ -1,6 +1,6 @@
-## Hypermut 3.0
+## Hypermut 3
 
-Web version (also has more details about method): https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermut.html
+**Note:** This page describes how to use the command line version of Hypermut 3. [Here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermut.html) is a link to the webtool. 
 
 **Reference for Hypermut 1.0:**
 Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.\
@@ -13,7 +13,7 @@ See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for m
 
 ## Overview
 
-Hypermut 3.0 allows searching for mutations fitting a pattern you specify. 
+Hypermut 3 allows searching for mutations fitting a pattern you specify. 
 The positions that match the upstream context pattern, followed by the specified mutation (relative to the reference sequence, 
 assumed to be the first entered, and treated as ancestral) followed by the downstream context will be found. 
 Matches to the opposite control pattern will be shown for comparison. 
@@ -22,7 +22,7 @@ Fisher's exact test is then used to detect any increase of mutation for the spec
 
 ## Installation
 
-Hypermut 3.0 is written in Python3 and requires the `scipy` package. 
+Hypermut 3 is written in Python3 and requires the `scipy` package. 
 
 To clone this repo:
 
@@ -42,7 +42,7 @@ This will create a hypermut conda environment that can be activated using:
 conda activate hypermut
 ```
 
-## Running Hypermut 3.0
+## Running Hypermut 3
 
 Aligned sequences in fasta file format are required as input.
 The first sequence in the alignment will be used as the reference sequence, and each of the other sequences will be used as a query sequence. 
@@ -89,34 +89,42 @@ The optional arguments include:
 
 ## Details
 
-- Context:
-  - As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
-  - Unlike Hypermut 2.0, () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA).
-  - All of the IUPAC codes are supported (e.g., R means G or A, while D means not C) and a vertical bar ("|") means "OR".
-  - Contexts can be multiple characters, but mutations can only be one character. 
-  - The upstream context patterns must always match a fixed number of nucleotides.
-    For example, A|TC is not allowed as a pattern because it could have length 1 or 2.
-- Reference sequence:
-  - The first sequence in the fasta file.
-  - In strict matching mode (see below), can contain IUPAC characters and gaps (`-`). 
-  - In partial matching mode (see below), can only contain non-multistate characters (ACGT) and gaps (`-`).
-  - For an intrapatient set, the reference could be the strict/majority consensus of all the sequences, assuming that the majority are not hypermutated.
-    - For more details about strict/majority consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
-  - For a set of unrelated sequences, the reference should probably be the strict/majority consensus sequence for the appropriate subtype.
-    - For pre-made subtype strict/majority consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
+**Mutations:**
+
+- The mutations to and from must only be one nucleotide. 
+
+**Context:**
+
+- As in regular expressions, the symbol "|" means "OR". Thus GGT|GAA matches GGT or GAA.
+- Unlike Hypermut 2.0, () **CANNOT** be used for grouping (i.e.,  G(GT|AA) is wrong, instead use GGT|GAA).
+- All of the [IUPAC codes](https://www.hiv.lanl.gov/content/sequence/HelpDocs/IUPAC.html) are supported (e.g., R means G or A, while D means not C).
+- Contexts can be multiple characters, but mutations can only be one character. 
+- The upstream and downstream context patterns must always match a fixed number of nucleotides.
+  For example, A|TC is not allowed as a pattern because it could have length 1 or 2.
+
+**Reference sequence:**
+
+- The first sequence in the fasta file.
+- In strict matching mode (see below), can contain IUPAC characters and gaps (`-`). 
+- In partial matching mode (see below), can only contain non-multistate characters (ACGT) and gaps (`-`).
+- For an intrapatient set, the reference could be the strict/majority consensus of all the sequences, assuming that the majority are not hypermutated.
+  - For more details about strict/majority consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
+- For a set of unrelated sequences, the reference should probably be the strict/majority consensus sequence for the appropriate subtype.
+  - For pre-made subtype strict/majority consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
   
-- Query sequence(s):
-  - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
-  - Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
-  - If the query sequence contains multistate characters, they can be treated as follows: 
-    - **Strict** (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). 
-      - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
-      - For the context, if the primary downstream context is `DT`, then `RT` would be considered the correct context. However, `NT` would not be considered the correct context. 
-      - This makes sense if the sequencing is from single clones and you don't want to consider ambiguous matches.
-    - **Partial**: Partially overlapping matches (for the mutation and the context) are considered.  
-      - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
-      - For the context, if the primary downstream context is `DT`, then a query `NT` context would be split between primary (75%) and control (25%) patterns. 
-      - This makes sense if the sequence is derived from a population.
+**Query sequence(s):**
+
+- Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
+- Contexts where the mutation in the query is a gap are ignored and not considered potential mutations.
+- If the query sequence contains multistate characters, they can be treated as follows: 
+  - **Strict** (default): Only completely inclusive matches containing multistate characters are considered (for the mutation and the context). 
+    - For a mutation site, the entire site is not considered if there is a partial match, e.g. if the context is correct but the primary mutation is `A` and the query mutation is `R`. 
+    - For the context, if the primary downstream context is `DT`, then `RT` would be considered the correct context. However, `NT` would not be considered the correct context. 
+    - This makes sense if the sequencing is from single clones and you don't want to consider ambiguous matches.
+  - **Partial**: Partially overlapping matches (for the mutation and the context) are considered.  
+    - For a mutation site, if the primary mutation is `A` and the query mutation is `R`, then this would be considered a 50% match. 
+    - For the context, if the primary downstream context is `DT`, then a query `NT` context would be split between primary (75%) and control (25%) patterns. 
+    - This makes sense if the sequence is derived from a population.
  
 
 ## Output
