@@ -1,0 +1,144 @@
+---
+title: "hypermut multistate"
+format: html
+---
+
+```{r}
+library(tidyverse)
+library(cowplot)
+library(ape)
+
+metadat <- read_tsv('data/manuscript_seqs.tsv', skip = 2)
+
+fa <- read.FASTA('data/manuscript_seqs.fasta')
+
+summary <- lapply(list.files('output', pattern = 'summary.csv', full.names = TRUE), function(x){
+  read_csv(x) %>% 
+    mutate(path = gsub('output/|-summary.csv', '', x))
+}) %>% bind_rows() 
+
+summary_wide <- summary %>%
+  select(seq_name, path, primary_matches, potential_primaries) %>% 
+  pivot_wider(names_from = path, values_from = c(primary_matches, potential_primaries)) %>% 
+  mutate(match_diff_multistate = `primary_matches_partial-skipgaps` - `primary_matches_strict-skipgaps`,
+         potential_diff_multistate = `potential_primaries_partial-skipgaps` - `potential_primaries_strict-skipgaps`,
+         match_diff_strict_gaps = `primary_matches_strict-skipgaps` - `primary_matches_strict-keepgaps`,
+         potential_diff_strict_gaps = `potential_primaries_strict-skipgaps` - `potential_primaries_strict-keepgaps`,
+         match_diff_partial_gaps = `primary_matches_partial-skipgaps` - `primary_matches_partial-keepgaps`,
+         potential_diff_partial_gaps = `potential_primaries_partial-skipgaps` - `potential_primaries_partial-keepgaps`) %>% 
+  mutate(Accession = gsub('.*\\.', '', seq_name)) %>% 
+  left_join(metadat) %>% 
+  filter(`Percent non-ACGT` > 0) 
+
+positions <- lapply(list.files('output', pattern = 'positions.csv', full.names = TRUE), function(x){
+  read_csv(x) %>% 
+    mutate(path = gsub('output/|-positions.csv', '', x))
+}) %>% bind_rows() %>% 
+  separate(path, into = c('multistate', 'gaps'))
+```
+
+```{r}
+nrow(summary_wide)
+```
+
+
+```{r}
+seq_info <- lapply(names(fa), function(x){
+  fa_str <- as.character(fa[x])[[1]]
+  fa_str <- rev(fa_str[cumsum(fa_str != '-') != 0])
+  fa_str <- rev(fa_str[cumsum(fa_str != '-') != 0])
+  fa_str_nogap <- fa_str[fa_str != '-']
+  c(seq_name = x, 
+    len = length(fa_str_nogap),
+    prop_gap = mean(fa_str == '-'), 
+    prop_multi = mean(!fa_str_nogap %in% c('a', 'c', 't', 'g')))
+}) %>% bind_rows() %>% 
+  mutate(len = as.numeric(len),
+         prop_gap = as.numeric(prop_gap),
+         prop_multi = as.numeric(prop_multi))
+
+seq_info %>% 
+  filter(seq_name != 'B.FR.1983.HXB2-LAI-IIIB-BRU.K03455' & len < 8000) %>%
+  summarize(mean_len = mean(len),
+            min_len = min(len),
+            max_len = max(len),
+            mean_prop_gap = mean(prop_gap),
+            min_prop_gap = min(prop_gap),
+            max_prop_gap = max(prop_gap),
+            mean_prop_multi = mean(prop_multi),
+            min_prop_multi = min(prop_multi),
+            max_prop_multi = max(prop_multi)) 
+```
+
+
+```{r}
+summary %>% 
+  filter(fisher_p < 0.05) %>% 
+  group_by(seq_name) %>% 
+  tally()
+
+summary %>% 
+  filter(fisher_p < 0.05) %>% 
+  mutate(seq_name = factor(seq_name)) %>% 
+  group_by(path) %>% 
+  summarize(n = n(),
+            seq_name = str_c(sort(as.numeric(seq_name)), collapse = ';'))
+```
+
+```{r}
+summary_wide %>% 
+  summarize(n_tot = n(),
+            p_tot = 1,
+            n_potential_diff_multistate = sum(potential_diff_multistate != 0),
+            p_potential_diff_multistate = mean(potential_diff_multistate != 0),
+            n_match_diff_multistate = sum(match_diff_multistate != 0),
+            p_match_diff_multistate = mean(match_diff_multistate != 0),
+            n_potential_diff_strict_gaps = sum(potential_diff_strict_gaps != 0),
+            p_potential_diff_strict_gaps = mean(potential_diff_strict_gaps != 0),
+            n_match_diff_strict_gaps = sum(match_diff_strict_gaps != 0),
+            p_match_diff_strict_gaps = mean(match_diff_strict_gaps != 0),
+            n_potential_diff_partial_gaps = sum(potential_diff_partial_gaps != 0),
+            p_potential_diff_partial_gaps = mean(potential_diff_partial_gaps != 0),
+            n_match_diff_partial_gaps = sum(match_diff_partial_gaps != 0),
+            p_match_diff_partial_gaps = mean(match_diff_partial_gaps != 0)) %>% 
+  pivot_longer(everything()) %>% 
+  mutate(type = gsub('_.*', '', name),
+         name = gsub('n_|p_', '', name)) %>% 
+  pivot_wider(names_from = type, values_from = value)
+```
+
+
+```{r}
+scatter <- summary_wide %>% 
+  ggplot(aes(x = `Percent non-ACGT`, y = potential_diff_multistate/`Sequence Length`*1000, col = match_diff_multistate)) +
+  geom_point() +
+  scale_color_gradient(low = 'grey80', high = 'black') +
+  ggpubr::stat_cor() +
+  theme_classic() +
+  labs(y = 'Additional potential primary\nmatches per 1000 nucleotides', col = 'Additional\nprimary\nmatches')
+
+cum <- positions %>% 
+  filter(seq_name %in% c('B.SE.1995.P8a_19950825.GU204943') &
+           context == 'primary') %>%
+  arrange(potential_mut_site) %>% 
+  group_by(seq_name, multistate, gaps, context) %>% 
+  mutate(cum_potential = cumsum(prop_context),
+         cum_match = cumsum(mut_match),
+         multistate = factor(str_to_sentence(multistate), c('Partial', 'Strict')),
+         gaps = factor(ifelse(gaps == 'skipgaps', 'Skip', 'Keep'), c('Skip', 'Keep'))) %>% 
+  ggplot(aes(x = cum_potential, y = cum_match, col = multistate, linetype = gaps)) +
+  geom_line() +
+  scale_color_grey() +
+  theme_classic() +
+  labs(x = 'Cumulative number of potential sites', y = '\nCumulative number of matches', col = 'Match mode', linetype = 'Gap handling')
+
+```
+
+```{r, fig.width=4.5,fig.height=7.5}
+plot_grid(scatter + theme(legend.position = c(0.9, 0.75), text = element_text(size = 12)), 
+          cum + theme(legend.position = c(0.7, 0.2), legend.box = "horizontal", text = element_text(size = 12)),
+          ncol = 1)
+```
+
+
+

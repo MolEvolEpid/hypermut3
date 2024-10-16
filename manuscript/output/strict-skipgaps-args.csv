@@ -1,0 +1,12 @@
+arg_name,arg_value
+fasta,data/manuscript_seqs.fasta
+mutationfrom,G
+mutationto,A
+upstreamcontext,.
+downstreamcontext,RD
+prefix,output/strict-skipgaps-
+enforce,D
+match,strict
+keepgaps,False
+begin,0
+finish,None
