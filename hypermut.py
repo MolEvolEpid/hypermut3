@@ -33,13 +33,13 @@ def check_input_patterns(
     # check that all patterns consist of IUPAC characters
     check_chars(
         primaryupstream,
-        list(iupac_dict.keys()) + [".", "|"],
-        "The upstream pattern must include only IUPAC characters, '.', and '|'.",
+        list(iupac_dict.keys()) + ["|"],
+        "The upstream pattern must include only IUPAC characters and '|'.",
     )
     check_chars(
         primarydownstream,
-        list(iupac_dict.keys()) + [".", "|"],
-        "The downstream pattern must include only IUPAC characters, '.', and '|'.",
+        list(iupac_dict.keys()) + ["|"],
+        "The downstream pattern must include only IUPAC characters and '|'.",
     )
     # stop with error if any pattern isn't fixed width
     check_width(primaryupstream, "upstream")
@@ -82,7 +82,7 @@ def check_partial_enforce(match_type, enforce_type):
 
 def compute_context_prop(refseq, seq, context, enforce, iupac_dict):
     prop = 1
-    if context[0] != ".":
+    if context[0] != "":
         prop = 0
         if enforce == "D":
             for u in context:
@@ -155,28 +155,28 @@ def find_match_weight(
         upstream_ref = upstream_seq = downstream_ref = downstream_seq = []
         up_same_len = down_same_len = True
         if enforce == "D":
-            if upstream_context[0] != ".":
+            if upstream_context[0] != "":
                 upstream_seq = slice_seq(
                     sequence, start, len(upstream_context[0]), "upstream", keep_gaps
                 )
-            if downstream_context[0] != ".":
+            if downstream_context[0] != "":
                 downstream_seq = slice_seq(
                     sequence, start, len(downstream_context[0]), "downstream", keep_gaps
                 )
                 down_same_len = len(downstream_context[0]) == len(downstream_seq)
         elif enforce == "A":
-            if upstream_context[0] != ".":
+            if upstream_context[0] != "":
                 upstream_ref = slice_seq(
                     refseq, start, len(upstream_context[0]), "upstream", keep_gaps
                 )
                 up_same_len = len(upstream_context[0]) == len(upstream_ref)
-            if downstream_context[0] != ".":
+            if downstream_context[0] != "":
                 downstream_ref = slice_seq(
                     refseq, start, len(downstream_context[0]), "downstream", keep_gaps
                 )
                 down_same_len = len(downstream_context[0]) == len(downstream_ref)
         elif enforce == "B":
-            if upstream_context[0] != ".":
+            if upstream_context[0] != "":
                 upstream_ref = slice_seq(
                     refseq, start, len(upstream_context[0]), "upstream", keep_gaps
                 )
@@ -186,7 +186,7 @@ def find_match_weight(
                 up_same_len = len(upstream_context[0]) == len(upstream_ref) and len(
                     upstream_context[0]
                 ) == len(upstream_seq)
-            if downstream_context[0] != ".":
+            if downstream_context[0] != "":
                 downstream_ref = slice_seq(
                     refseq, start, len(downstream_context[0]), "downstream", keep_gaps
                 )
@@ -362,14 +362,18 @@ def parse_args(args, iupac_dict):
         help="Base in the query to consider a nucleotide substitution of interest",
     )
     parser.add_argument(
-        "upstreamcontext",
+        "--upstreamcontext",
+        "-u",
         type=str.upper,
-        help="Upstream nucleotide context of interest",
+        default="",
+        help="Upstream nucleotide context of interest (default: no upstream context)",
     )
     parser.add_argument(
-        "downstreamcontext",
+        "--downstreamcontext",
+        "-d",
         type=str.upper,
-        help="Downstream nucleotide context of interest",
+        default="",
+        help="Downstream nucleotide context of interest (default: no downstream context)",
     )
     parser.add_argument(
         "--prefix",

@@ -2,7 +2,7 @@ arg_name,arg_value
 fasta,example.fasta
 mutationfrom,G
 mutationto,A
-upstreamcontext,.
+upstreamcontext,
 downstreamcontext,RD
 prefix,example-strict-
 enforce,D

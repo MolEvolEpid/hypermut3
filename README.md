@@ -51,7 +51,7 @@ Please choose the reference sequence carefully (see details below).
 To search for hypermutation by APOBEC3G or APOBEC3F using the example fasta file, you can run the command:
 
 ```
-python hypermut.py example/example.fasta G A . RD
+python hypermut.py example/example.fasta G A -d RD
 ```
 
 The positional inputs are as follows:
@@ -60,14 +60,16 @@ The positional inputs are as follows:
   fasta                 Alignment file in fasta format
   mutationfrom          Base in the reference to consider as a site of interest for nucleotide substitution
   mutationto            Base in the query to consider a nucleotide substitution of interest
-  upstreamcontext       Upstream nucleotide context of interest
-  downstreamcontext     Downstream nucleotide context of interest
 ```
 
 The optional arguments include:
 
 ```
 -h, --help            show this help message and exit
+--upstreamcontext UPSTREAMCONTEXT, -u UPSTREAMCONTEXT
+                      Upstream nucleotide context of interest (default: no upstream context)
+--downstreamcontext DOWNSTREAMCONTEXT, -d DOWNSTREAMCONTEXT
+                      Downstream nucleotide context of interest (default: no downstream context)
 --prefix PREFIX, -p PREFIX
                       Prefix for output files (default: no prefix).
 --enforce {A,D,B}, -e {A,D,B}
