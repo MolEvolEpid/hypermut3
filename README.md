@@ -71,9 +71,8 @@ The optional arguments include:
 --summaryfile SUMMARYFILE, -s SUMMARYFILE
                       File path to csv including a summary of mutation counts and potential sites 
                       for primary and control contexts (default: summary.csv)
---positionsfile POSITIONSFILE, -p POSITIONSFILE
-                      File path to csv including potential mutation sites and whether there was 
-                      the correct mutation at those sites (default: positions.csv)
+--prefix PREFIX, -p PREFIX
+                      Prefix for output files (default: no prefix).
 --argsfile ARGSFILE, -a ARGSFILE
                       File path to csv including input arguments (default: args.csv)
 --enforce {A,D,B}, -e {A,D,B}
@@ -84,7 +83,7 @@ The optional arguments include:
                       or also include partial matches (not completely overlapping
                       bases between query and context, partial)
 --keepgaps, -k        Flag indicating to keep gaps in the alignment when
-                      identifying pattern matches (default without flag is to remove gaps)
+                      identifying pattern matches (default without flag is to skip gaps)
 --begin BEGIN, -b BEGIN
                       Position at which to start searching for mutations (default: 0).
                       Note that the context may fall outside of these positions.
@@ -106,10 +105,10 @@ The optional arguments include:
   - The first sequence in the fasta file.
   - In strict matching mode (see below), can contain IUPAC characters and gaps (`-`). 
   - In partial matching mode (see below), can only contain non-multistate characters (ACGT) and gaps (`-`).
-  - For an intrapatient set, the reference could be the consensus of all the sequences, assuming that the majority are not hypermutated.
-    - For more details about consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
-  - For a set of unrelated sequences, the reference should probably be the consensus sequence for the appropriate subtype.
-    - For pre-made subtype consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
+  - For an intrapatient set, the reference could be the strict/majority consensus of all the sequences, assuming that the majority are not hypermutated.
+    - For more details about strict/majority consensus making, and a webtool, see [here](https://www.hiv.lanl.gov/content/sequence/CONSENSUS/consensus.html).
+  - For a set of unrelated sequences, the reference should probably be the strict/majority consensus sequence for the appropriate subtype.
+    - For pre-made subtype strict/majority consensus sequences for HIV, see [here](https://www.hiv.lanl.gov/content/sequence/NEWALIGN/align.html). 
   
 - Query sequence(s):
   - Can contain [IUPAC nucleotide codes](https://www.bioinformatics.org/sms/iupac.html) (T, not U) and gaps (`-`).
@@ -144,8 +143,8 @@ There are three outputs:
     - `seq_num`: Sequence number
     - `seq_name`: Sequence name
     - `potential_mut_site`: Potential mutation site
-    - `control`: Whether the site matches the control pattern/context (1) or primary pattern/context (0)
-    - `prop_control`: Proportion of the site that matches the control or primary pattern/context
+    - `context`: Whether the site matches the control or primary pattern/context
+    - `prop_context`: Proportion of the site that matches the control or primary pattern/context (should always be 1 in strict mode)
     - `mut_match`: Whether the expected mutation was present or not
 - Args (default path: `args.csv`):
   - Row for each input argument to `hypermut.py` (with two columns: `arg_name` and `arg_value`):
@@ -163,31 +162,19 @@ There are three outputs:
     - `finish`: End position in the alignmnet
 
 
-## Example code for cumulative plot
+## Example script for cumulative plot
 
-Sometimes it is useful to look at the plot of cumulative number of potential match sites vs. cumulative number of actual matches. Here is R code that you can use to create this plot:
+Sometimes it is useful to look at the plot of cumulative number of potential match sites vs. cumulative number of actual matches. 
+We provide an R script that you can use to create this plot. To create this plot, you must have R installed as well as the following 
+packags: readr, dplyr, ggplot2, and stringr (all come with the [tidyverse](https://www.tidyverse.org/)).
+
+The script requires as input the positions file output by `hypermut.py`, and will output a pdf and png version of the plot with the same prefix as the positions file with the suffix "_cumplot". Feel free to customize the script however you'd like. 
 
 ```
-# load library
-library(tidyverse)
-
-# read in positions file
-positions <- read_csv('example_positions_output.csv', comment = '#')
-
-# cumulative plot (for primary)
-positions %>% 
-  filter(control == 0) %>% 
-  arrange(potential_mut_site) %>% 
-  group_by(seq_name) %>% 
-  mutate(cum_potential = cumsum(prop_control),
-         cum_match = cumsum(mut_match)) %>% 
-  ggplot(aes(x = cum_potential, y = cum_match, col = seq_name)) +
-  geom_line() +
-  theme_classic() +
-  labs(x = 'Cumulative number of potential sites', y = 'Cumulative number of matches', col = '')
+Rscript cumplot.R positions.csv
 ```
 
-Here is a comparison of the example data run in strict and partial modes using code similar to the above (see the `example` folder and corresponding `README` for more details on exactly how this was generated):
+Here is a comparison of the example data run in strict and partial modes using code similar to that in `cumplot.R` (see the `example` folder and corresponding `README.md` for more details on exactly how this was generated):
 
 ![example](example/example.png)
 
