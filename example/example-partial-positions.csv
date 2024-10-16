@@ -1,4 +1,4 @@
-seq_num,seq_name,potential_mut_site,control,prop_control,mut_match
+seq_num,seq_name,potential_mut_site,control,prop_context,mut_match
 1,Seq2,6,1,1.0,0.0
 1,Seq2,9,1,1.0,0.0
 1,Seq2,16,1,1.0,0.0
