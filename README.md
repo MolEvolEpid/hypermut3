@@ -16,8 +16,9 @@ See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for m
 Hypermut 3 allows searching for mutations fitting a pattern you specify. 
 The positions that match the upstream context pattern, followed by the specified mutation (relative to the reference sequence, 
 assumed to be the first entered, and treated as ancestral) followed by the downstream context will be found. 
+Matching can be performed in strict or partial mode and accounts for multistate characters. 
 Matches to the opposite control pattern will be shown for comparison. 
-The context requirements can be enforced on the reference sequence, or on the query sequence (recommended, especially if the reference is distant) or both. 
+The context requirements can be enforced on the reference sequence, on the query sequence (recommended, especially if the reference is distant) or both. 
 Fisher's exact test is then used to detect any increase of mutation for the specified context compared to the control context.
 
 ## Installation
@@ -170,7 +171,7 @@ There are three outputs:
 ## Example script for cumulative plot
 
 Sometimes it is useful to look at the plot of cumulative number of potential match sites vs. cumulative number of actual matches. 
-We provide an R script that you can use to create this plot. To create this plot, you must have R installed as well as the following 
+We provide an R script that you can use to create this plot. To create this plot, you must have R (version 4) installed as well as the following 
 packags: readr, dplyr, ggplot2, and stringr (all come with the [tidyverse](https://www.tidyverse.org/)).
 
 The script requires as input the positions file output by `hypermut.py`, and will output a pdf and png version of the plot with the same prefix as the positions file with the suffix "_cumplot". Feel free to customize the script however you'd like. 
