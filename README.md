@@ -1,6 +1,6 @@
 ## Hypermut 3
 
-**Note:** This page describes how to use the command line version of Hypermut 3. [Here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermut.html) is a link to the webtool. 
+**Note:** This page describes how to use the command line version of Hypermut 3. [Here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermutv3.html) is a link to the webtool. 
 
 **Reference for Hypermut 1.0:**
 Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.\
