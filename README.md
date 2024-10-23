@@ -28,7 +28,7 @@ Hypermut 3 is written in Python3 and requires the `scipy` package.
 To clone this repo:
 
 ```
-git clone https://github.com/MolEvolEpid/hypermut
+git clone https://github.com/MolEvolEpid/hypermut3
 ```
 
 The `hypermut_env.yaml` file can be used to create a conda environment with the (very minimal) requried dependencies, if desired. First, install [conda](https://github.com/conda-forge/miniforge). Then, run the following command from the `hypermut` directory:
