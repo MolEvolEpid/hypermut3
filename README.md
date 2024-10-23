@@ -31,7 +31,7 @@ To clone this repo:
 git clone https://github.com/MolEvolEpid/hypermut3
 ```
 
-The `hypermut_env.yaml` file can be used to create a conda environment with the (very minimal) required dependencies, if desired. First, install [mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html). Then, run the following command from the `hypermut` directory:
+If desired, the `hypermut_env.yaml` file can be used to create a conda environment with the (very minimal) required dependencies (if you already have Python3 and scipy installed, you don't need to do this). First, install [mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html). Then, run the following command from the `hypermut` directory:
 
 ```
 mamba env create -f hypermut_env.yaml
