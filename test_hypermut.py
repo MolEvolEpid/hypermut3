@@ -54,7 +54,8 @@ def test_check_input_patterns():
         check_input_patterns("G", "R", "", "RD", iupac_dict)
         assert len(w) == 1
         assert issubclass(w[-1].category, UserWarning)
-        assert "Mutation from and to have overlapping bases" in str(w[-1].message)
+        assert "Mutation from and to have overlapping bases" in str(
+            w[-1].message)
 
 
 def test_check_partial_enforce():
@@ -76,13 +77,19 @@ def test_compute_context_prop():
     assert compute_context_prop("G", "R", ["A"], "D", iupac_dict) == 0.5
     assert compute_context_prop("G", "R", ["A", "G"], "D", iupac_dict) == 1
     assert compute_context_prop("GG", "NT", ["RD"], "D", iupac_dict) == 0.5
-    assert compute_context_prop("GG", "NT", ["YN", "RC"], "D", iupac_dict) == 0.5
+    assert compute_context_prop(
+        "GG", "NT", [
+            "YN", "RC"], "D", iupac_dict) == 0.5
     assert compute_context_prop("GG", "WS", ["RD"], "D", iupac_dict) == 0.25
-    assert compute_context_prop("GG", "WS", ["YN", "RC"], "D", iupac_dict) == 0.75
+    assert compute_context_prop(
+        "GG", "WS", [
+            "YN", "RC"], "D", iupac_dict) == 0.75
     assert compute_context_prop("GG", "N", ["R"], "D", iupac_dict) == 0.5
     assert compute_context_prop("GG", "N", ["Y"], "D", iupac_dict) == 0.5
     assert compute_context_prop("GG", "NN", ["RR"], "D", iupac_dict) == 0.25
-    assert compute_context_prop("GG", "NN", ["YY", "RY", "YR"], "D", iupac_dict) == 0.75
+    assert compute_context_prop(
+        "GG", "NN", [
+            "YY", "RY", "YR"], "D", iupac_dict) == 0.75
 
 
 def test_slice_seq():
@@ -103,50 +110,206 @@ def test_find_match_weight():
         "GGT", "AGT", 0, 1, "A", [""], ["RD"], "B", iupac_dict, "strict", False
     ) == (1, 1, 0, 0)
     assert find_match_weight(
-        "GGG", "AGT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 1, 0, 0)
+        "GGG",
+        "AGT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
         "GGG", "TGT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (1, 0, 0, 0)
     assert find_match_weight(
-        "GGG", "TGT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 0, 0, 0)
+        "GGG",
+        "TGT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        0,
+        0,
+        0)
     assert find_match_weight(
         "GGG", "AGC", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (0, 0, 1, 1)
     assert find_match_weight(
-        "GGG", "AGC", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0, 0, 1, 1)
+        "GGG",
+        "AGC",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0,
+        0,
+        1,
+        1)
     assert find_match_weight(
-        "GGGG", "A-GC", 1, 2, "A", [""], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GC",
+        1,
+        2,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GC", 1, 2, "A", [""], ["RD"], "D", iupac_dict, "strict", True
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GC",
+        1,
+        2,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        True) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GC", 1, 2, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GC",
+        1,
+        2,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGG",
+        "A-GT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", True
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        True) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 1, 0, 0)
+        "GGGG",
+        "A-GT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
         "GGG", "RGT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (0, 0, 0, 0)
     assert find_match_weight(
-        "GGG", "RGT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 0.5, 0, 0)
+        "GGG",
+        "RGT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        0.5,
+        0,
+        0)
     assert find_match_weight(
-        "GGT", "RGT", 0, 1, "A", [""], ["RD"], "A", iupac_dict, "partial", False
-    ) == (1, 0.5, 0, 0)
+        "GGT",
+        "RGT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "A",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        0.5,
+        0,
+        0)
     assert find_match_weight(
-        "GGT", "RGT", 0, 1, "A", [""], ["RD"], "B", iupac_dict, "partial", False
-    ) == (1, 0.5, 0, 0)
+        "GGT",
+        "RGT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "B",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        0.5,
+        0,
+        0)
     assert find_match_weight(
         "GGG", "AGR", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (1, 1, 0, 0)
@@ -157,14 +320,49 @@ def test_find_match_weight():
         "GGG", "AGC", 0, 1, "A", [""], ["RD"], "B", iupac_dict, "strict", False
     ) == (0, 0, 0, 0)
     assert find_match_weight(
-        "GGG", "AGR", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 1, 0, 0)
+        "GGG",
+        "AGR",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGG", "AGR", 0, 1, "A", [""], ["RD"], "A", iupac_dict, "partial", False
-    ) == (1, 1, 0, 0)
+        "GGG",
+        "AGR",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "A",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGG", "AGC", 0, 1, "A", [""], ["RD"], "B", iupac_dict, "partial", False
-    ) == (
+        "GGG",
+        "AGC",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "B",
+        iupac_dict,
+        "partial",
+        False) == (
         0.5,
         0.5,
         0.5,
@@ -174,87 +372,391 @@ def test_find_match_weight():
         "GGG", "ANT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (0, 0, 0, 0)
     assert find_match_weight(
-        "GGG", "ANT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.5, 0.5, 0.5)
+        "GGG",
+        "ANT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.5,
+        0.5,
+        0.5)
     assert find_match_weight(
         "GGG", "RNT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
     ) == (0, 0, 0, 0)
     assert find_match_weight(
-        "GGG", "RNT", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.25, 0.5, 0.25)
+        "GGG",
+        "RNT",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.25,
+        0.5,
+        0.25)
     assert find_match_weight(
-        "GGGG", "A-GN", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GN",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "A-GN", 0, 1, "A", [""], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.75, 0.75, 0.25, 0.25)
+        "GGGG",
+        "A-GN",
+        0,
+        1,
+        "A",
+        [""],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.75,
+        0.75,
+        0.25,
+        0.25)
     assert find_match_weight(
-        "GGGGG", "TAAGT", 2, 3, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGGG",
+        "TAAGT",
+        2,
+        3,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGGG", "TAAGT", 2, 3, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGGG",
+        "TAAGT",
+        2,
+        3,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "AAGT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGG",
+        "AAGT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "ATGT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 0, 0, 0)
+        "GGGG",
+        "ATGT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "AAGC", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 1, 1)
+        "GGGG",
+        "AAGC",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        1,
+        1)
     assert find_match_weight(
-        "GGGG", "A-GC", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "A-GC",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGGGG", "-AA-GT", 2, 3, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGGGG",
+        "-AA-GT",
+        2,
+        3,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "ARGT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "ARGT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "ARGT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (1, 0.5, 0, 0)
+        "GGGG",
+        "ARGT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        1,
+        0.5,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "AAGR", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGG",
+        "AAGR",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        1,
+        1,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "AANT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "AANT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "AANT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.5, 0.5, 0.5)
+        "GGGG",
+        "AANT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.5,
+        0.5,
+        0.5)
     assert find_match_weight(
-        "GGGG", "ARNT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "strict", False
-    ) == (0, 0, 0, 0)
+        "GGGG",
+        "ARNT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "strict",
+        False) == (
+        0,
+        0,
+        0,
+        0)
     assert find_match_weight(
-        "GGGG", "ARNT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.25, 0.5, 0.25)
+        "GGGG",
+        "ARNT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.25,
+        0.5,
+        0.25)
     assert find_match_weight(
-        "GGGG", "RAAT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.5, 0.5, 0.5)
+        "GGGG",
+        "RAAT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.5,
+        0.5,
+        0.5)
     assert find_match_weight(
-        "GGGG", "RANT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.25, 0.25, 0.75, 0.75)
+        "GGGG",
+        "RANT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.25,
+        0.25,
+        0.75,
+        0.75)
     assert find_match_weight(
-        "GGGG", "RRNT", 1, 2, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.25, 0.5 * 0.25, 0.75, 0.5 * 0.75)
+        "GGGG",
+        "RRNT",
+        1,
+        2,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.25,
+        0.5 * 0.25,
+        0.75,
+        0.5 * 0.75)
     assert find_match_weight(
-        "GGGGGG", "R-A-GD", 2, 3, "A", ["A"], ["RD"], "D", iupac_dict, "partial", False
-    ) == (0.5, 0.5, 0.5, 0.5)
+        "GGGGGG",
+        "R-A-GD",
+        2,
+        3,
+        "A",
+        ["A"],
+        ["RD"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.5,
+        0.5,
+        0.5,
+        0.5)
     assert find_match_weight(
-        "GGGG", "AAGT", 1, 2, "A", ["A"], ["RD", "AC"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
-    # assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD', 'RD'], iupac_dict, 'strict', False) == (1,1,0,0) # wrong but incorrect context caught earlier in script
+        "GGGG", "AAGT", 1, 2, "A", ["A"], [
+            "RD", "AC"], "D", iupac_dict, "strict", False) == (
+        1, 1, 0, 0)
+    # assert find_match_weight('AAGT', 1, 2, 'A', ['A'], ['RD', 'RD'],
+    # iupac_dict, 'strict', False) == (1,1,0,0) # wrong but incorrect context
+    # caught earlier in script
     assert find_match_weight(
-        "GGGG", "ATGT", 1, 2, "A", ["A"], ["RD", "AC"], "D", iupac_dict, "strict", False
-    ) == (1, 0, 0, 0)
+        "GGGG", "ATGT", 1, 2, "A", ["A"], [
+            "RD", "AC"], "D", iupac_dict, "strict", False) == (
+        1, 0, 0, 0)
     assert find_match_weight(
-        "GGGG", "AAAC", 1, 2, "A", ["A"], ["RD", "AC"], "D", iupac_dict, "strict", False
-    ) == (1, 1, 0, 0)
+        "GGGG", "AAAC", 1, 2, "A", ["A"], [
+            "RD", "AC"], "D", iupac_dict, "strict", False) == (
+        1, 1, 0, 0)
     assert find_match_weight(
-        "GGG", "ANN", 0, 1, "A", [""], ["RR"], "D", iupac_dict, "partial", False
-    ) == (0.25, 0.25, 0.75, 0.75)
+        "GGG",
+        "ANN",
+        0,
+        1,
+        "A",
+        [""],
+        ["RR"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.25,
+        0.25,
+        0.75,
+        0.75)
     assert find_match_weight(
         "GGG",
         "ANN",
@@ -269,11 +771,37 @@ def test_find_match_weight():
         False,
     ) == (0.75, 0.75, 0.25, 0.25)
     assert find_match_weight(
-        "GGG", "NAN", 1, 2, "A", ["R"], ["R"], "D", iupac_dict, "partial", False
-    ) == (0.25, 0.25, 0.75, 0.75)
+        "GGG",
+        "NAN",
+        1,
+        2,
+        "A",
+        ["R"],
+        ["R"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.25,
+        0.25,
+        0.75,
+        0.75)
     assert find_match_weight(
-        "GGG", "NAN", 1, 2, "A", ["Y"], ["Y"], "D", iupac_dict, "partial", False
-    ) == (0.25, 0.25, 0.75, 0.75)
+        "GGG",
+        "NAN",
+        1,
+        2,
+        "A",
+        ["Y"],
+        ["Y"],
+        "D",
+        iupac_dict,
+        "partial",
+        False) == (
+        0.25,
+        0.25,
+        0.75,
+        0.75)
     assert find_match_weight(
         "GGG", "AGT", 2, 3, "A", ["RD"], [""], "A", iupac_dict, "strict", False
     ) == (1, 0, 0, 0)
@@ -373,7 +901,10 @@ def test_calc_pval_ratio():
 
 
 def test_read_seq():
-    assert read_seq(StringIO(">test\nACGT\n>test2\nAAAA"), list("ACGT-"), "error") == (
+    assert read_seq(
+        StringIO(">test\nACGT\n>test2\nAAAA"),
+        list("ACGT-"),
+        "error") == (
         "test",
         "ACGT",
         ">test2\n",
@@ -386,20 +917,21 @@ def test_read_seq():
         ">test2\n",
     )
     assert read_seq(
-        StringIO("ACGR\n>test2\nAAAA"), list(iupac_dict.keys()), "error", ">test\n"
-    ) == (
-        "test",
-        "ACGR",
-        ">test2\n",
+        StringIO("ACGR\n>test2\nAAAA"),
+        list(
+            iupac_dict.keys()),
+        "error",
+        ">test\n") == (
+            "test",
+            "ACGR",
+            ">test2\n",
     )
     with pytest.raises(ValueError):
-        read_seq(
-            StringIO("test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), "error"
-        )
+        read_seq(StringIO("test\nACGTX\n>test2\nAAAA"),
+                 list(iupac_dict.keys()), "error")
     with pytest.raises(ValueError):
-        read_seq(
-            StringIO(">test\nACGTX\n>test2\nAAAA"), list(iupac_dict.keys()), "error"
-        )
+        read_seq(StringIO(">test\nACGTX\n>test2\nAAAA"),
+                 list(iupac_dict.keys()), "error")
 
 
 def test_parse_args():
@@ -456,7 +988,8 @@ def test_loop_through_sequences():
     )
     fa.close()
     assert summary_out.getvalue()[0:30] == "Seq2,0.0,71.0,0.0,54.0,undef,1"
-    assert summary_out.getvalue()[31:67] == "Seq5,4.0,69.0,1.0,52.0,3.01,0.282669"
+    assert summary_out.getvalue()[
+        31:67] == "Seq5,4.0,69.0,1.0,52.0,3.01,0.282669"
     with pytest.raises(ValueError):
         loop_through_sequences(
             StringIO(">test\nACGTX\n>test2\nAAAA"),

@@ -46,7 +46,8 @@ def check_input_patterns(
         mutfrom = iupac_dict[mutfrom]
         mutto = iupac_dict[mutto]
     except Exception:
-        raise ValueError("Mutation from and to must each be a single IUPAC character.")
+        raise ValueError(
+            "Mutation from and to must each be a single IUPAC character.")
     # check for (undesired) overlap in mutation from and to
     if sum([1 for x in mutfrom if x in mutto]) != 0:
         warnings.warn("Mutation from and to have overlapping bases.")
@@ -69,7 +70,8 @@ def check_input_patterns(
         "".join(list(y)) for x in base_info_primary for y in product(*x)
     ]
     if len(contexts_primary) != len(set(contexts_primary)):
-        raise ValueError("Context is redundant. Please provide non-redundant patterns.")
+        raise ValueError(
+            "Context is redundant. Please provide non-redundant patterns.")
 
 
 def check_partial_enforce(match_type, enforce_type):
@@ -127,9 +129,10 @@ def slice_seq(sequence, start, context_len, context_type, keep_gaps):
             seq_sliced = list(re.sub("-", "", sequence[:start])[-context_len:])
     if context_type == "downstream":
         if keep_gaps:
-            seq_sliced = list(sequence[start + 1 :][:context_len])
+            seq_sliced = list(sequence[start + 1:][:context_len])
         else:
-            seq_sliced = list(re.sub("-", "", sequence[start + 1 :])[:context_len])
+            seq_sliced = list(
+                re.sub("-", "", sequence[start + 1:])[:context_len])
     return seq_sliced
 
 
@@ -153,59 +156,53 @@ def find_match_weight(
         up_same_len = down_same_len = True
         if enforce == "D":
             if upstream_context[0] != "":
-                upstream_seq = slice_seq(
-                    sequence, start, len(upstream_context[0]), "upstream", keep_gaps
-                )
+                upstream_seq = slice_seq(sequence, start, len(
+                    upstream_context[0]), "upstream", keep_gaps)
             if downstream_context[0] != "":
-                downstream_seq = slice_seq(
-                    sequence, start, len(downstream_context[0]), "downstream", keep_gaps
-                )
-                down_same_len = len(downstream_context[0]) == len(downstream_seq)
+                downstream_seq = slice_seq(sequence, start, len(
+                    downstream_context[0]), "downstream", keep_gaps)
+                down_same_len = len(
+                    downstream_context[0]) == len(downstream_seq)
         elif enforce == "A":
             if upstream_context[0] != "":
-                upstream_ref = slice_seq(
-                    refseq, start, len(upstream_context[0]), "upstream", keep_gaps
-                )
+                upstream_ref = slice_seq(refseq, start, len(
+                    upstream_context[0]), "upstream", keep_gaps)
                 up_same_len = len(upstream_context[0]) == len(upstream_ref)
             if downstream_context[0] != "":
-                downstream_ref = slice_seq(
-                    refseq, start, len(downstream_context[0]), "downstream", keep_gaps
-                )
-                down_same_len = len(downstream_context[0]) == len(downstream_ref)
+                downstream_ref = slice_seq(refseq, start, len(
+                    downstream_context[0]), "downstream", keep_gaps)
+                down_same_len = len(
+                    downstream_context[0]) == len(downstream_ref)
         elif enforce == "B":
             if upstream_context[0] != "":
-                upstream_ref = slice_seq(
-                    refseq, start, len(upstream_context[0]), "upstream", keep_gaps
-                )
-                upstream_seq = slice_seq(
-                    sequence, start, len(upstream_context[0]), "upstream", keep_gaps
-                )
-                up_same_len = len(upstream_context[0]) == len(upstream_ref) and len(
-                    upstream_context[0]
-                ) == len(upstream_seq)
+                upstream_ref = slice_seq(refseq, start, len(
+                    upstream_context[0]), "upstream", keep_gaps)
+                upstream_seq = slice_seq(sequence, start, len(
+                    upstream_context[0]), "upstream", keep_gaps)
+                up_same_len = len(
+                    upstream_context[0]) == len(upstream_ref) and len(
+                    upstream_context[0]) == len(upstream_seq)
             if downstream_context[0] != "":
-                downstream_ref = slice_seq(
-                    refseq, start, len(downstream_context[0]), "downstream", keep_gaps
-                )
-                downstream_seq = slice_seq(
-                    sequence, start, len(downstream_context[0]), "downstream", keep_gaps
-                )
+                downstream_ref = slice_seq(refseq, start, len(
+                    downstream_context[0]), "downstream", keep_gaps)
+                downstream_seq = slice_seq(sequence, start, len(
+                    downstream_context[0]), "downstream", keep_gaps)
                 down_same_len = len(downstream_context[0]) == len(
                     downstream_ref
                 ) and len(downstream_context[0]) == len(downstream_seq)
         if up_same_len and down_same_len:
             upstream_seq_prop_primary = compute_context_prop(
-                upstream_ref, upstream_seq, upstream_context, enforce, iupac_dict
-            )
+                upstream_ref, upstream_seq, upstream_context, enforce, iupac_dict)
             downstream_seq_prop_primary = compute_context_prop(
-                downstream_ref, downstream_seq, downstream_context, enforce, iupac_dict
-            )
-            # 1 means complete primary or control site, fraction means partial primary or control site
+                downstream_ref, downstream_seq, downstream_context, enforce, iupac_dict)
+            # 1 means complete primary or control site, fraction means partial
+            # primary or control site
             site_primary = upstream_seq_prop_primary * downstream_seq_prop_primary
             site_control = 1 - site_primary
             chars_seq = iupac_dict[base]
             chars_mut = iupac_dict[mutto]
-            correct_mut = sum([x in chars_mut for x in chars_seq]) / len(chars_seq)
+            correct_mut = sum(
+                [x in chars_mut for x in chars_seq]) / len(chars_seq)
             matchval_primary = correct_mut * site_primary
             matchval_control = correct_mut * site_control
         if keep_gaps:
@@ -311,9 +308,11 @@ def check_positive(value):
 
 
 def calc_pval_ratio(primarysites, primaries, controlsites, controls):
-    odds_ratio, pval = calc_fisher(primarysites, primaries, controlsites, controls)
+    odds_ratio, pval = calc_fisher(
+        primarysites, primaries, controlsites, controls)
     try:
-        ratio = "%0.2f" % (primaries * controlsites / (1.0 * primarysites * controls))
+        ratio = "%0.2f" % (primaries * controlsites /
+                           (1.0 * primarysites * controls))
     except Exception:
         if primaries * controlsites > 0:
             ratio = "inf"
@@ -341,9 +340,12 @@ def read_seq(fa, chars, error, line=None):
 
 def parse_args(args, iupac_dict):
     parser = argparse.ArgumentParser(
-        prog="Hypermut 3.0", description="Identify mutations in a user-defined context"
-    )
-    parser.add_argument("fasta", type=str, help="Alignment file in fasta format")
+        prog="Hypermut 3.0",
+        description="Identify mutations in a user-defined context")
+    parser.add_argument(
+        "fasta",
+        type=str,
+        help="Alignment file in fasta format")
     parser.add_argument(
         "mutationfrom",
         type=str.upper,
@@ -379,7 +381,10 @@ def parse_args(args, iupac_dict):
         "--enforce",
         "-e",
         type=str,
-        choices=["A", "D", "B"],
+        choices=[
+            "A",
+            "D",
+            "B"],
         default="D",
         help="What sequence to enforce the context on: ancestor/reference (A), descendant/query (D, default), or both (B)",
     )
@@ -387,7 +392,9 @@ def parse_args(args, iupac_dict):
         "--match",
         "-m",
         type=str,
-        choices=["strict", "partial"],
+        choices=[
+            "strict",
+            "partial"],
         default="strict",
         help="Whether to include only complete matches (strict, default), or also include partial matches (not completely overlapping bases between query and context, partial)",
     )
@@ -412,7 +419,8 @@ def parse_args(args, iupac_dict):
     )
     args = parser.parse_args(args)
 
-    # only allow partial matches when context is enforced on query sequence only
+    # only allow partial matches when context is enforced on query sequence
+    # only
     check_partial_enforce(args.match, args.enforce)
     # check input patterns
     check_input_patterns(
@@ -457,7 +465,8 @@ def loop_through_sequences(fa, args, iupac_dict, summaryfile, positionsfile):
             positionsfile,
         )
 
-        pval, ratio = calc_pval_ratio(primarysites, primaries, controlsites, controls)
+        pval, ratio = calc_pval_ratio(
+            primarysites, primaries, controlsites, controls)
 
         if summaryfile is not None:
             summaryfile.write(
