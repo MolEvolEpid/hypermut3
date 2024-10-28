@@ -292,7 +292,8 @@ def summarize_matches(
 
 def calc_fisher(primarysites, primaries, controlsites, controls):
     return fisher_exact(
-        [[primaries, primarysites - primaries], [controls, controlsites - controls]],
+        [[primaries, primarysites - primaries],
+            [controls, controlsites - controls]],
         alternative="greater",
     )
 
