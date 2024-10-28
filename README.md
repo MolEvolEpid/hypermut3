@@ -159,14 +159,14 @@ There are three outputs:
     - `mutationto`: Mutation to
     - `upstreamcontext`: Upstream context
     - `downstreamcontext`: Downstream context
-    - `summaryfile`: Summary file name
-    - `positionsfile`: Positions file name
-    - `argsfile`: Args file name
+    - `prefix`: File prefix
     - `enforce`: What sequence to enforce the context on
     - `match`: Match mode
+    - `keepgaps`: Whether gaps are kept (True) or skipped (False)
     - `begin`: Start position in the alignmnet
     - `finish`: End position in the alignmnet
 
+For upstreamcontext, downstreamcontext, and prefix, `arg_value` will be blank if nothing is provided
 
 ## Example script for cumulative plot
 
@@ -186,7 +186,7 @@ Here is a comparison of the example data run in strict and partial modes using c
 
 ## Tests
 
-To run the unit tests for the functions used in `hypermut.py`, you need `pytest` (which is included in the conda environment). Then you can run the command:
+To run the unit tests for the functions used in `hypermut.py`, you need `pytest` and `pytest-cov` (which are included in the conda environment). Then you can run the command:
 
 ```
 pytest test_hypermut.py
