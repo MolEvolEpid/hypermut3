@@ -22,6 +22,8 @@ summary_wide <- summary %>%
   pivot_wider(names_from = path, values_from = c(primary_matches, potential_primaries)) %>% 
   mutate(match_diff_multistate = `primary_matches_partial-skipgaps` - `primary_matches_strict-skipgaps`,
          potential_diff_multistate = `potential_primaries_partial-skipgaps` - `potential_primaries_strict-skipgaps`,
+         match_diff_multistate_keep = `primary_matches_partial-keepgaps` - `primary_matches_strict-keepgaps`,
+         potential_diff_multistate_keep = `potential_primaries_partial-keepgaps` - `potential_primaries_strict-keepgaps`,
          match_diff_strict_gaps = `primary_matches_strict-skipgaps` - `primary_matches_strict-keepgaps`,
          potential_diff_strict_gaps = `potential_primaries_strict-skipgaps` - `potential_primaries_strict-keepgaps`,
          match_diff_partial_gaps = `primary_matches_partial-skipgaps` - `primary_matches_partial-keepgaps`,
@@ -62,10 +64,10 @@ seq_info %>%
   summarize(mean_len = mean(len),
             min_len = min(len),
             max_len = max(len),
-            mean_prop_gap = mean(prop_gap),
+            median_prop_gap = median(prop_gap),
             min_prop_gap = min(prop_gap),
             max_prop_gap = max(prop_gap),
-            mean_prop_multi = mean(prop_multi),
+            median_prop_multi = median(prop_multi),
             min_prop_multi = min(prop_multi),
             max_prop_multi = max(prop_multi)) 
 ```
@@ -86,6 +88,26 @@ summary %>%
 ```
 
 ```{r}
+summary %>% 
+  select(!c(rate_ratio, fisher_p)) %>% 
+  pivot_longer(!c(seq_name, path)) %>% 
+  group_by(path, name) %>% 
+  summarize(median_value = median(value),
+            min_value = min(value),
+            q25_value = quantile(value, 0.25),
+            q75_value = quantile(value, 0.75), #) %>% #,
+            max_value = max(value)) %>% 
+  mutate(stats = paste0(median_value, ' (', q25_value, '-', q75_value, ')')) %>%
+  # mutate(stats = paste0(median_value, ' (', min_value, '-', max_value, ')')) %>% 
+  select(path, name, stats) %>% 
+  pivot_wider(names_from = name, values_from = stats) %>% 
+  mutate(path = factor(path, levels = c('strict-keepgaps', 'partial-keepgaps', 'strict-skipgaps', 'partial-skipgaps'))) %>% 
+  arrange(path) %>% 
+  select(path, primary_matches, potential_primaries, control_matches, potential_controls)
+```
+
+
+```{r}
 summary_wide %>% 
   summarize(n_tot = n(),
             p_tot = 1,
@@ -93,6 +115,12 @@ summary_wide %>%
             p_potential_diff_multistate = mean(potential_diff_multistate != 0),
             n_match_diff_multistate = sum(match_diff_multistate != 0),
             p_match_diff_multistate = mean(match_diff_multistate != 0),
+            
+            n_potential_diff_multistate_keep = sum(potential_diff_multistate_keep != 0),
+            p_potential_diff_multistate_keep = mean(potential_diff_multistate_keep != 0),
+            n_match_diff_multistate_keep = sum(match_diff_multistate_keep != 0),
+            p_match_diff_multistate_keep = mean(match_diff_multistate_keep != 0),
+            
             n_potential_diff_strict_gaps = sum(potential_diff_strict_gaps != 0),
             p_potential_diff_strict_gaps = mean(potential_diff_strict_gaps != 0),
             n_match_diff_strict_gaps = sum(match_diff_strict_gaps != 0),
@@ -100,11 +128,46 @@ summary_wide %>%
             n_potential_diff_partial_gaps = sum(potential_diff_partial_gaps != 0),
             p_potential_diff_partial_gaps = mean(potential_diff_partial_gaps != 0),
             n_match_diff_partial_gaps = sum(match_diff_partial_gaps != 0),
-            p_match_diff_partial_gaps = mean(match_diff_partial_gaps != 0)) %>% 
+            p_match_diff_partial_gaps = mean(match_diff_partial_gaps != 0),
+            
+            median_potential_diff_multistate = median(potential_diff_multistate),
+            min_potential_diff_multistate = min(potential_diff_multistate),
+            max_potential_diff_multistate = max(potential_diff_multistate),
+            median_match_diff_multistate = median(match_diff_multistate),
+            min_match_diff_multistate = min(match_diff_multistate),
+            max_match_diff_multistate = max(match_diff_multistate),
+            
+            median_potential_diff_multistate_keep = median(potential_diff_multistate_keep),
+            min_potential_diff_multistate_keep = min(potential_diff_multistate_keep),
+            max_potential_diff_multistate_keep = max(potential_diff_multistate_keep),
+            median_match_diff_multistate_keep = median(match_diff_multistate_keep),
+            min_match_diff_multistate_keep = min(match_diff_multistate_keep),
+            max_match_diff_multistate_keep = max(match_diff_multistate_keep),
+            
+            median_potential_diff_strict_gaps = median(potential_diff_strict_gaps),
+            min_potential_diff_strict_gaps = min(potential_diff_strict_gaps),
+            max_potential_diff_strict_gaps = max(potential_diff_strict_gaps),
+            median_match_diff_strict_gaps = median(match_diff_strict_gaps),
+            min_match_diff_strict_gaps = min(match_diff_strict_gaps),
+            max_match_diff_strict_gaps = max(match_diff_strict_gaps),
+            median_potential_diff_partial_gaps = median(potential_diff_partial_gaps),
+            min_potential_diff_partial_gaps = min(potential_diff_partial_gaps),
+            max_potential_diff_partial_gaps = max(potential_diff_partial_gaps),
+            median_match_diff_partial_gaps = median(match_diff_partial_gaps),
+            min_match_diff_partial_gaps = min(match_diff_partial_gaps),
+            max_match_diff_partial_gaps = max(match_diff_partial_gaps)) %>% 
   pivot_longer(everything()) %>% 
   mutate(type = gsub('_.*', '', name),
-         name = gsub('n_|p_', '', name)) %>% 
-  pivot_wider(names_from = type, values_from = value)
+         name = gsub('^n_|^p_|median_|min_|max_', '', name)) %>% 
+  pivot_wider(names_from = type, values_from = value) %>% 
+  mutate(count = paste0(n, ' (', round(p*100, 1), '%', ')'),
+         stats = paste0(median, ' (', min, '-', max, ')')) %>%
+  select(name, count, stats) %>% 
+  mutate(name = factor(name, levels = c('tot', 'potential_diff_strict_gaps', 'match_diff_strict_gaps', 
+                                        'potential_diff_partial_gaps', 'match_diff_partial_gaps', 
+                                        'potential_diff_multistate_keep', 'match_diff_multistate_keep', 
+                                        'potential_diff_multistate', 'match_diff_multistate'))) %>% 
+  arrange(name)
 ```
 
 
