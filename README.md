@@ -2,9 +2,10 @@
 
 **Note:** This page describes how to use the command line version of Hypermut 3. [Here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/hypermutv3.html) is a link to the webtool. 
 
-**Reference for Hypermut 1.0:**
-Rose, PP and Korber, BT. 2000. Detecting hypermutations in viral sequences with an emphasis on G -> A hypermutation. Bioinformatics 16(4): 400-401.\
-https://academic.oup.com/bioinformatics/article/16/4/400/187265
+**Reference for Hypermut 3:**\
+Hypermut 3: Identifying specific mutational patterns in a defined nucleotide context that allows multistate characters\
+Zena Lapp, Hyejin Yoon, Brian T Foley, Thomas Leitner\
+bioRxiv 2024.10.24.620069; doi: https://doi.org/10.1101/2024.10.24.620069 
 
 **Primary purpose:** Analysis and detection of APOBEC3F- and APOBEC3G-induced hypermutation. 
 See [here](https://www.hiv.lanl.gov/content/sequence/HYPERMUT/Readme.html) for more details on hypermutation. 
